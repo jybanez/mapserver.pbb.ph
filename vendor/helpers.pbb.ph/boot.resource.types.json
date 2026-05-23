@@ -1,0 +1,326 @@
+[
+    {
+        "id": 41,
+        "name": "First Aid Kit",
+        "category": "Medical",
+        "sort_order": 0,
+        "is_active": true,
+        "created_at": "2026-02-19T01:17:54.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 1,
+        "name": "Ambulance",
+        "category": "Medical",
+        "sort_order": 1,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:10.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 3,
+        "name": "Medical Supplies",
+        "category": "Medical",
+        "sort_order": 2,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:10.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 15,
+        "name": "Food & Water Supplies",
+        "category": "Supply",
+        "sort_order": 3,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:11.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 20,
+        "name": "Mobile Toilets",
+        "category": "Sanitations Kits",
+        "sort_order": 4,
+        "is_active": true,
+        "created_at": "2026-02-16T00:47:09.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 22,
+        "name": "Pot Water",
+        "category": "Sanitations Kits",
+        "sort_order": 5,
+        "is_active": true,
+        "created_at": "2026-02-16T00:47:09.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 19,
+        "name": "Tents",
+        "category": "Shelter Material",
+        "sort_order": 6,
+        "is_active": true,
+        "created_at": "2026-02-16T00:47:09.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 7,
+        "name": "Rescue Boat",
+        "category": "Rescue",
+        "sort_order": 7,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:11.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 16,
+        "name": "Life Vest",
+        "category": "Rescue",
+        "sort_order": 8,
+        "is_active": true,
+        "created_at": "2026-02-15T23:42:38.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 17,
+        "name": "Rope",
+        "category": "Rescue",
+        "sort_order": 9,
+        "is_active": true,
+        "created_at": "2026-02-15T23:42:38.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 18,
+        "name": "LifeBuoy Ring",
+        "category": "Rescue",
+        "sort_order": 10,
+        "is_active": true,
+        "created_at": "2026-02-15T23:42:38.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 21,
+        "name": "Body Harness",
+        "category": "Rescue",
+        "sort_order": 11,
+        "is_active": true,
+        "created_at": "2026-02-16T00:47:09.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 23,
+        "name": "Harness Cable",
+        "category": "Rescue",
+        "sort_order": 12,
+        "is_active": true,
+        "created_at": "2026-02-16T00:51:22.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 24,
+        "name": "Hygiene Kit",
+        "category": "Non-food Items",
+        "sort_order": 13,
+        "is_active": true,
+        "created_at": "2026-02-16T00:51:22.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 25,
+        "name": "Kitchen Kit",
+        "category": "Non-food Items",
+        "sort_order": 14,
+        "is_active": true,
+        "created_at": "2026-02-16T00:51:22.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 26,
+        "name": "Sleeping Kit",
+        "category": "Non-food Items",
+        "sort_order": 15,
+        "is_active": true,
+        "created_at": "2026-02-16T00:51:22.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 27,
+        "name": "Family Clothing Kit",
+        "category": "Non-food Items",
+        "sort_order": 16,
+        "is_active": true,
+        "created_at": "2026-02-16T00:51:22.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 30,
+        "name": "Drone",
+        "category": "Surveillance",
+        "sort_order": 17,
+        "is_active": true,
+        "created_at": "2026-02-16T01:07:25.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 4,
+        "name": "Fire Truck",
+        "category": "Fire",
+        "sort_order": 18,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:10.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 5,
+        "name": "Water Tanker",
+        "category": "Fire",
+        "sort_order": 19,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:10.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 31,
+        "name": "Hydraulic Combi-tool",
+        "category": "Tool",
+        "sort_order": 20,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 32,
+        "name": "Hydraulic Hand Breaker",
+        "category": "Tool",
+        "sort_order": 21,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 33,
+        "name": "Hydraulic Power Pack",
+        "category": "Tool",
+        "sort_order": 22,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 34,
+        "name": "Hydraulic Cutter",
+        "category": "Tool",
+        "sort_order": 23,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 35,
+        "name": "Hydraulic Spreader",
+        "category": "Tool",
+        "sort_order": 24,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 36,
+        "name": "Hydraulic Splitter",
+        "category": "Tool",
+        "sort_order": 25,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 37,
+        "name": "Hydraulic Ram",
+        "category": "Tool",
+        "sort_order": 26,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 38,
+        "name": "Pneumatic Lifting Bag",
+        "category": "Tool",
+        "sort_order": 27,
+        "is_active": true,
+        "created_at": "2026-02-16T01:45:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 29,
+        "name": "Road Breaker",
+        "category": "Heavy Equipment",
+        "sort_order": 28,
+        "is_active": true,
+        "created_at": "2026-02-16T01:05:38.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 10,
+        "name": "Backhoe",
+        "category": "Heavy Equipment",
+        "sort_order": 29,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:11.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 11,
+        "name": "Dump Truck",
+        "category": "Heavy Equipment",
+        "sort_order": 30,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:11.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 12,
+        "name": "Tow Truck",
+        "category": "Heavy Equipment",
+        "sort_order": 31,
+        "is_active": true,
+        "created_at": "2026-01-23T13:00:11.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 28,
+        "name": "Bulldozer",
+        "category": "Heavy Equipment",
+        "sort_order": 32,
+        "is_active": true,
+        "created_at": "2026-02-16T00:54:51.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 39,
+        "name": "Night Vision",
+        "category": "Tool",
+        "sort_order": 33,
+        "is_active": true,
+        "created_at": "2026-02-18T08:33:36.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 42,
+        "name": "Jackhammer",
+        "category": "Tool",
+        "sort_order": 34,
+        "is_active": true,
+        "created_at": "2026-02-19T06:39:31.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    },
+    {
+        "id": 43,
+        "name": "Satellite Phone",
+        "category": "Tool",
+        "sort_order": 35,
+        "is_active": true,
+        "created_at": "2026-02-19T09:19:48.000000Z",
+        "updated_at": "2026-02-19T09:19:48.000000Z"
+    }
+]

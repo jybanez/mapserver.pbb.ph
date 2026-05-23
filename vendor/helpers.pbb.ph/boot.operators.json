@@ -1,0 +1,23 @@
+[
+    {
+        "id": 2,
+        "name": "Operator Level 1",
+        "operator_level": 1,
+        "is_available": true,
+        "last_seen_at": "2026-02-21T20:09:50.000000Z"
+    },
+    {
+        "id": 3,
+        "name": "Operator Level 2",
+        "operator_level": 2,
+        "is_available": false,
+        "last_seen_at": "2026-02-21T20:21:38.000000Z"
+    },
+    {
+        "id": 4,
+        "name": "Operator Level 3",
+        "operator_level": 3,
+        "is_available": false,
+        "last_seen_at": "2026-01-29T02:57:12.000000Z"
+    }
+]

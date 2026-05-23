@@ -1,0 +1,13 @@
+{
+  "name": "hotline-helpers",
+  "version": "0.21.83",
+  "description": "Shared helpers.pbb.ph source with optional minified bundle generation.",
+  "type": "module",
+  "scripts": {
+    "build:ui-bundle": "node scripts/build.ui.bundle.mjs"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
+}

@@ -1,0 +1,9 @@
+.env
+.artifacts/
+test-results/
+storage/logs/
+storage/tiles/
+storage/installer/
+storage/boundaries/
+pbb.ph.key
+pbb.ph.crt

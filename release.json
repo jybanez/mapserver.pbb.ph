@@ -1,0 +1,105 @@
+{
+    "schema_version": 1,
+    "app": "pbb-mapserver",
+    "name": "PBB MapServer",
+    "milestone": 1,
+    "version": "1.0.0",
+    "display_version": "v1-1.0.0",
+    "release_date": "2026-05-15",
+    "release_name": "Initial Kit Setup Installer Contract",
+    "type": "plain-php",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jybanez/mapserver.pbb.ph"
+    },
+    "build": {
+        "version": "1.0.0",
+        "id": "pbb-mapserver-20260524-033722",
+        "built_at": "2026-05-24T03:37:25+08:00",
+        "git_commit": "unknown",
+        "builder": "pbb-mapserver-trusted-bundle"
+    },
+    "update": {
+        "contract_version": 1,
+        "channel": "testing",
+        "immutable_release": false,
+        "from_versions": [
+            "1.0.0"
+        ],
+        "compatibility": "same-version-rebuild",
+        "requires_database_migration": false,
+        "requires_data_prep_rerun": false,
+        "requires_service_restart": false,
+        "rollback_supported": true
+    },
+    "requires": {
+        "os": [
+            "windows",
+            "linux"
+        ],
+        "php": ">=8.2",
+        "php_extensions": [
+            "curl",
+            "json",
+            "openssl",
+            "spl"
+        ],
+        "mysql": "not-required",
+        "node": "not-required",
+        "composer": "not-required",
+        "apps": {}
+    },
+    "installer": {
+        "interactive": "installer/index.php",
+        "unattended": "installer/install-run.php",
+        "status": "installer/status.php",
+        "schema": "installer/schema/install.schema.json",
+        "tools": {
+            "prepare_boundaries": "tools/prepare-boundaries.php",
+            "populate_tiles": "tools/populate-tiles.php"
+        }
+    },
+    "data_prep": {
+        "version": 1,
+        "capabilities": {
+            "prepare_data": true,
+            "apply_settings": true,
+            "verify": true
+        },
+        "tools": {
+            "prepare_data": {
+                "path": "tools/data-prep/prepare.php",
+                "config_section": "mapserver.data_prep.prepare"
+            },
+            "apply_settings": {
+                "path": "tools/data-prep/apply-settings.php",
+                "config_section": "mapserver.data_prep.apply_settings"
+            },
+            "verify": {
+                "path": "tools/data-prep/verify.php",
+                "config_section": "mapserver.data_prep.verify"
+            }
+        },
+        "notes": "MapServer Prepare Data populates the local tile cache. Apply Settings is a no-op in the initial scope because client map styles are owned by consuming apps."
+    },
+    "health": {
+        "http": "/tiles/health",
+        "ready": "/api/status",
+        "status": "/api/status"
+    },
+    "services": [
+        {
+            "id": "pbb-mapserver-web",
+            "name": "PBB MapServer Web",
+            "kind": "web",
+            "command": "Apache/WAMP PHP handler",
+            "required": true,
+            "healthcheck": "/tiles/health"
+        }
+    ],
+    "artifacts": {
+        "install_manifest": "storage/installer/install-manifest.json",
+        "install_report": "storage/installer/install-report.json",
+        "install_log": "storage/installer/install.log"
+    }
+}

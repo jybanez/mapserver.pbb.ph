@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PBB MapServer installer config",
+  "type": "object",
+  "required": ["schema_version", "mode", "app", "mapserver"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "mode": { "type": "string", "enum": ["fresh", "upgrade", "repair", "preflight"] },
+    "kit": {
+      "type": "object",
+      "properties": {
+        "run_id": { "type": "string" },
+        "node_id": { "type": "string" },
+        "operator": { "type": "string" },
+        "timezone": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "app": {
+      "type": "object",
+      "required": ["public_path"],
+      "properties": {
+        "install_path": { "type": "string" },
+        "public_path": { "type": "string" },
+        "app_url": { "type": "string" },
+        "app_env": { "type": "string" },
+        "app_debug": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "services": {
+      "type": "object",
+      "properties": {
+        "target_os": { "type": "string" },
+        "manager": { "type": "string" },
+        "startup_mode": { "type": "string" },
+        "registration_mode": { "type": "string", "enum": ["generate", "register", "manual"] }
+      },
+      "additionalProperties": true
+    },
+    "secrets": {
+      "type": "object",
+      "properties": {
+        "policy": { "type": "string" },
+        "values": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "write_env": { "type": "boolean" },
+        "overwrite_env": { "type": "boolean" },
+        "validate_after_install": { "type": "boolean" },
+        "copy_cache": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "mapserver": {
+      "type": "object",
+      "required": ["cache_root", "log_file"],
+      "properties": {
+        "cache_root": {
+          "type": "string",
+          "description": "Tile cache directory. Relative paths are resolved under app.install_path; absolute paths must remain under app.install_path."
+        },
+        "log_file": {
+          "type": "string",
+          "description": "Tile log file. Relative paths are resolved under app.install_path; absolute paths must remain under app.install_path."
+        },
+        "purge_token": { "type": "string" },
+        "raster_base_url": { "type": "string" },
+        "vector_base_url": { "type": "string" },
+        "glyphs_base_url": { "type": "string" },
+        "terrain_base_url": { "type": "string" },
+        "poi_base_url": { "type": "string" },
+        "stadiamaps_api_key": { "type": "string" },
+        "maptiler_api_key": { "type": "string" },
+        "curl_ssl_verify": { "type": "boolean" },
+        "curl_ca_bundle": { "type": "string" },
+        "populate": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "deployment_scope": { "type": "string", "enum": ["barangay", "city", "province", "region", "other"] },
+            "source_geojson": { "type": "string" },
+            "boundary_geojson": { "type": "string" },
+            "brgy_code": { "type": "string" },
+            "barangay_code": { "type": "string" },
+            "psgc_code": { "type": "string" },
+            "citymun_code": { "type": "string" },
+            "city_code": { "type": "string" },
+            "municipality_code": { "type": "string" },
+            "prov_code": { "type": "string" },
+            "province_code": { "type": "string" },
+            "reg_code": { "type": "string" },
+            "region_code": { "type": "string" },
+            "barangay": { "type": "string" },
+            "barangay_name": { "type": "string" },
+            "city": { "type": "string" },
+            "city_name": { "type": "string" },
+            "municipality": { "type": "string" },
+            "boundary_work_dir": { "type": "string" },
+            "no_download": { "type": "boolean" },
+            "force_download": { "type": "boolean" },
+            "bbox": { "type": "string" },
+            "center": { "type": "string" },
+            "radius_km": { "type": ["number", "string"] },
+            "zooms": { "type": "string" },
+            "types": { "type": "string" },
+            "max_tiles": { "type": "integer" },
+            "curl_ssl_verify": { "type": "boolean" },
+            "curl_ca_bundle": { "type": "string" },
+            "ca_bundle": { "type": "string" },
+            "dry_run": { "type": "boolean" }
+          },
+          "additionalProperties": true
+        },
+        "data_prep": {
+          "type": "object",
+          "properties": {
+            "prepare": {
+              "type": "object",
+              "properties": {
+                "base_url": { "type": "string" },
+                "deployment_scope": { "type": "string", "enum": ["barangay", "city", "province", "region", "other"] },
+                "source_geojson": { "type": "string" },
+                "boundary_geojson": { "type": "string" },
+                "brgy_code": { "type": "string" },
+                "barangay_code": { "type": "string" },
+                "psgc_code": { "type": "string" },
+                "citymun_code": { "type": "string" },
+                "city_code": { "type": "string" },
+                "municipality_code": { "type": "string" },
+                "prov_code": { "type": "string" },
+                "province_code": { "type": "string" },
+                "reg_code": { "type": "string" },
+                "region_code": { "type": "string" },
+                "barangay": { "type": "string" },
+                "barangay_name": { "type": "string" },
+                "city": { "type": "string" },
+                "city_name": { "type": "string" },
+                "municipality": { "type": "string" },
+                "boundary_work_dir": { "type": "string" },
+                "no_download": { "type": "boolean" },
+                "force_download": { "type": "boolean" },
+                "bbox": { "type": "string" },
+                "center": { "type": "string" },
+                "radius_km": { "type": ["number", "string"] },
+                "zooms": { "type": "string" },
+                "types": { "type": "string" },
+                "max_tiles": { "type": "integer" },
+                "limit": { "type": "integer" },
+                "timeout": { "type": "integer" },
+                "curl_ssl_verify": { "type": "boolean" },
+                "curl_ca_bundle": { "type": "string" },
+                "ca_bundle": { "type": "string" }
+              },
+              "additionalProperties": true
+            },
+            "verify": {
+              "type": "object",
+              "properties": {
+                "base_url": { "type": "string" }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

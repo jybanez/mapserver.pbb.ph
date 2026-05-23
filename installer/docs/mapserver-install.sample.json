@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "mode": "fresh",
+  "kit": {
+    "run_id": "kit_20260515_001",
+    "node_id": "hub-a",
+    "operator": "installer-admin",
+    "timezone": "Asia/Manila"
+  },
+  "app": {
+    "install_path": "C:\\wamp64\\www\\mapserver",
+    "public_path": "C:\\wamp64\\www\\mapserver",
+    "app_url": "http://localhost/mapserver",
+    "app_env": "production",
+    "app_debug": false
+  },
+  "services": {
+    "target_os": "windows",
+    "manager": "apache-wamp",
+    "startup_mode": "automatic",
+    "registration_mode": "generate"
+  },
+  "secrets": {
+    "policy": "kit-shared-defaults",
+    "values": {
+      "purge_token": "replace-with-generated-token",
+      "stadiamaps_api_key": "from-resources-kit-setup-shared-install-defaults",
+      "maptiler_api_key": "from-resources-kit-setup-shared-install-defaults"
+    }
+  },
+  "options": {
+    "write_env": true,
+    "overwrite_env": false,
+    "validate_after_install": true,
+    "copy_cache": false
+  },
+  "mapserver": {
+    "cache_root": "storage\\tiles",
+    "log_file": "storage\\logs\\tiles.log",
+    "purge_token": "replace-with-generated-token",
+    "raster_base_url": "",
+    "vector_base_url": "",
+    "glyphs_base_url": "",
+    "terrain_base_url": "",
+    "poi_base_url": "",
+    "curl_ssl_verify": true,
+    "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem",
+    "populate": {
+      "enabled": false,
+      "source_geojson": "storage\\boundaries\\mapserver-data-prep-barangay-730600041.geojson",
+      "brgy_code": "730600041",
+      "barangay": "Lahug",
+      "city": "Cebu City",
+      "zooms": "10-14",
+      "types": "raster,vector",
+      "max_tiles": 5000,
+      "curl_ssl_verify": true,
+      "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem",
+      "dry_run": true
+    },
+    "data_prep": {
+      "prepare": {
+        "base_url": "http://localhost/mapserver",
+        "deployment_scope": "barangay",
+        "barangay_code": "730600041",
+        "barangay": "Lahug",
+        "city": "Cebu City",
+        "boundary_work_dir": "storage\\boundaries",
+        "zooms": "10-14",
+        "types": "raster,vector",
+        "max_tiles": 5000,
+        "timeout": 20,
+        "curl_ssl_verify": true,
+        "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem"
+      },
+      "verify": {
+        "base_url": "http://localhost/mapserver"
+      }
+    }
+  }
+}

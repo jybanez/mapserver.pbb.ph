@@ -1,0 +1,8 @@
+[
+    "Active",
+    "Deferred",
+    "Escalated",
+    "Resolved",
+    "Discarded",
+    "Disconnected"
+  ]

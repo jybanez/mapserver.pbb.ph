@@ -1,0 +1,9 @@
+[
+    "assigned",
+    "requested",
+    "accepted",
+    "en_route",
+    "on_scene",
+    "completed",
+    "cancelled"
+  ]
