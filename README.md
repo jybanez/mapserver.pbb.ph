@@ -39,6 +39,7 @@ RewriteRule ^tiles/.*$ index.php [L,QSA]
 - `GET /tiles/terrain/{z}/{x}/{y}.png`
 - `GET /tiles/glyphs/{fontstack}/{range}.pbf`
 - `GET /tiles/poi/{z}/{x}/{y}.pbf` (POI vector tiles for MapLibre)
+- `GET /boundaries/{scope}/{code}.geojson` (public GeoJSON overlays for `barangay`, `city`, `province`, and `region`)
 - `GET /tiles/health`
 
 ## Purge Endpoint
@@ -94,6 +95,17 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\data-prep\prepare.php --mode initial -
 When Data Prep populates tiles through an HTTPS PBB domain with a local/self-signed certificate, provide `mapserver.data_prep.prepare.curl_ca_bundle` in the Kit config. For controlled local setup runs only, `mapserver.data_prep.prepare.curl_ssl_verify=false` disables verification for the populator.
 
 The wrapper can resolve Hub/Kit barangay codes such as `072217029` and `072217003` from the vendored boundary data, then populate the matching local tile coverage. See `docs/tile-populator.md` for the full Data Prep contract and verified population examples.
+
+## Boundary Overlay API
+MapServer also serves public boundary overlays for client apps such as Hotline:
+
+```
+GET /boundaries/barangay/072217029.geojson
+GET /boundaries/city/072217.geojson
+GET /boundaries.geojson?scope=barangay&relay_hub_id=072217029
+```
+
+The first request prepares GeoJSON from the vendored boundary resources and caches it under `storage/boundaries/http`; later requests return the generated GeoJSON with `ETag`, `Last-Modified`, CORS, and public cache headers. See `docs/boundary-overlay-contract.md` for the full Relay `/hub.json` mapping contract.
 
 ## Kit Bundle Defaults
 Shared MapServer provider credentials are not committed to this source tree. Trusted package builds inject `resources/kit-setup/shared-install-defaults.json` into the canonical `pbb-mapserver-1.0.0.zip` bundle and add that injected file to the bundle's `checksums.sha256`. Kit Setup reads that file as hidden shared install defaults and passes the allowlisted values to MapServer install config; operators should not see these keys in Kit Admin Inputs.

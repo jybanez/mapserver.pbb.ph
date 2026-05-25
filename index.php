@@ -294,6 +294,7 @@ function get_service_status(): array
             'terrain' => '/tiles/terrain/{z}/{x}/{y}.png',
             'glyphs' => '/tiles/glyphs/{fontstack}/{range}.pbf',
             'poi' => '/tiles/poi/{z}/{x}/{y}.pbf',
+            'boundary' => '/boundaries/{scope}/{code}.geojson',
         ],
         'cache' => [
             'root' => $cacheRoot,
@@ -321,6 +322,248 @@ function get_service_status(): array
             'ca_bundle_configured' => !empty($config['curl_ca_bundle']),
         ],
     ];
+}
+
+function release_build_id(): string
+{
+    static $buildId = null;
+    if ($buildId !== null) {
+        return $buildId;
+    }
+
+    $releasePath = __DIR__ . DIRECTORY_SEPARATOR . 'release.json';
+    $buildId = 'unknown';
+    if (is_file($releasePath)) {
+        $release = json_decode((string)@file_get_contents($releasePath), true);
+        if (is_array($release)) {
+            $candidate = (string)($release['build']['id'] ?? $release['version'] ?? '');
+            if ($candidate !== '') {
+                $buildId = $candidate;
+            }
+        }
+    }
+
+    return $buildId;
+}
+
+function boundary_source_version(): string
+{
+    static $version = null;
+    if ($version !== null) {
+        return $version;
+    }
+
+    $manifestPath = __DIR__ . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'boundaries' . DIRECTORY_SEPARATOR . 'manifest.json';
+    $version = 'unknown';
+    if (is_file($manifestPath)) {
+        $manifest = json_decode((string)@file_get_contents($manifestPath), true);
+        if (is_array($manifest)) {
+            $capturedAt = (string)($manifest['captured_at'] ?? '');
+            $source = (string)($manifest['source_repository'] ?? '');
+            $version = trim($source . '@' . $capturedAt, '@') ?: 'unknown';
+        }
+    }
+
+    return $version;
+}
+
+function normalize_boundary_scope(string $scope): string
+{
+    $scope = strtolower(trim($scope));
+    $aliases = [
+        'brgy' => 'barangay',
+        'barangay' => 'barangay',
+        'other' => 'barangay',
+        'city' => 'city',
+        'citymun' => 'city',
+        'municipality' => 'city',
+        'municipal' => 'city',
+        'province' => 'province',
+        'prov' => 'province',
+        'region' => 'region',
+        'reg' => 'region',
+    ];
+
+    return $aliases[$scope] ?? '';
+}
+
+function boundary_code_from_request(string $scope, array $query): string
+{
+    $keysByScope = [
+        'barangay' => ['code', 'brgy_code', 'barangay_code', 'psgc_code', 'relay_hub_id'],
+        'city' => ['code', 'citymun_code', 'city_code', 'municipality_code', 'psgc_code'],
+        'province' => ['code', 'prov_code', 'province_code', 'psgc_code'],
+        'region' => ['code', 'reg_code', 'region_code', 'psgc_code'],
+    ];
+
+    foreach ($keysByScope[$scope] ?? ['code'] as $key) {
+        $value = trim((string)($query[$key] ?? ''));
+        if ($value !== '') {
+            return preg_replace('/\D+/', '', $value) ?? '';
+        }
+    }
+
+    return '';
+}
+
+function boundary_code_option(string $scope): string
+{
+    return [
+        'barangay' => 'brgy-code',
+        'city' => 'citymun-code',
+        'province' => 'prov-code',
+        'region' => 'reg-code',
+    ][$scope] ?? 'brgy-code';
+}
+
+function boundary_php_binary(): string
+{
+    $configured = trim((string)(getenv('MAPSERVER_PHP_BINARY') ?: ''));
+    if ($configured !== '' && is_file($configured)) {
+        return $configured;
+    }
+
+    $wampPhp = 'C:\\wamp64\\bin\\php\\php8.2.29\\php.exe';
+    if (DIRECTORY_SEPARATOR === '\\' && is_file($wampPhp)) {
+        return $wampPhp;
+    }
+
+    return PHP_BINARY;
+}
+
+function boundary_http_paths(string $scope, string $code): array
+{
+    $safeCode = preg_replace('/[^0-9A-Za-z_-]+/', '', $code) ?? '';
+    $baseDir = __DIR__ . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'boundaries' . DIRECTORY_SEPARATOR . 'http';
+    $base = $baseDir . DIRECTORY_SEPARATOR . $scope . '-' . $safeCode;
+
+    return [
+        'dir' => $baseDir,
+        'geojson' => $base . '.geojson',
+        'index' => $base . '.index.json',
+        'report' => $base . '.report.json',
+        'lock' => $base . '.lock',
+    ];
+}
+
+function prepare_boundary_geojson(string $scope, string $code, array $paths): array
+{
+    if (is_file($paths['geojson'])) {
+        return ['ok' => true, 'output' => 'cached'];
+    }
+
+    if (!ensure_dir($paths['dir'])) {
+        return ['ok' => false, 'error' => 'Boundary cache directory is not writable.'];
+    }
+
+    $lock = @fopen($paths['lock'], 'c');
+    if ($lock === false) {
+        return ['ok' => false, 'error' => 'Boundary cache lock could not be opened.'];
+    }
+
+    try {
+        if (!flock($lock, LOCK_EX)) {
+            return ['ok' => false, 'error' => 'Boundary cache lock could not be acquired.'];
+        }
+
+        if (is_file($paths['geojson'])) {
+            return ['ok' => true, 'output' => 'cached'];
+        }
+
+        $tool = __DIR__ . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'prepare-boundaries.php';
+        $command = [
+            boundary_php_binary(),
+            $tool,
+            '--deployment-scope',
+            $scope,
+            '--work-dir',
+            __DIR__ . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'boundaries',
+            '--output',
+            $paths['geojson'],
+            '--index',
+            $paths['index'],
+            '--report',
+            $paths['report'],
+            '--no-download',
+            '--' . boundary_code_option($scope),
+            $code,
+        ];
+        $shellCommand = implode(' ', array_map('escapeshellarg', $command));
+        $output = [];
+        $exitCode = 1;
+        exec($shellCommand . ' 2>&1', $output, $exitCode);
+
+        if ($exitCode !== 0 || !is_file($paths['geojson'])) {
+            return [
+                'ok' => false,
+                'error' => 'Boundary generation failed.',
+                'details' => array_slice($output, -8),
+            ];
+        }
+
+        return ['ok' => true, 'output' => implode("\n", $output)];
+    } finally {
+        @flock($lock, LOCK_UN);
+        @fclose($lock);
+    }
+}
+
+function boundary_response_headers(string $scope, string $code, string $geojsonPath): array
+{
+    $etag = '"' . hash_file('sha256', $geojsonPath) . '"';
+    $lastModified = gmdate('D, d M Y H:i:s', filemtime($geojsonPath) ?: time()) . ' GMT';
+
+    return [
+        'Access-Control-Allow-Origin' => '*',
+        'Cache-Control' => 'public, max-age=86400, stale-while-revalidate=604800',
+        'Content-Type' => 'application/geo+json; charset=UTF-8',
+        'ETag' => $etag,
+        'Last-Modified' => $lastModified,
+        'X-Cache' => 'HIT',
+        'X-PBB-Boundary-Scope' => $scope,
+        'X-PBB-Boundary-Code' => $code,
+        'X-PBB-Boundary-Source' => 'resources/boundaries',
+        'X-PBB-Boundary-Version' => boundary_source_version(),
+        'X-PBB-MapServer-Build' => release_build_id(),
+    ];
+}
+
+function serve_boundary_geojson(string $scope, string $code, array $commonHeaders): void
+{
+    $scope = normalize_boundary_scope($scope);
+    $code = preg_replace('/\D+/', '', $code) ?? '';
+    if ($scope === '' || $code === '') {
+        respond(400, $commonHeaders + ['Content-Type' => 'application/json'], json_encode([
+            'status' => 'error',
+            'error' => 'Provide a supported boundary scope and numeric PSGC code.',
+            'supported_scopes' => ['barangay', 'city', 'province', 'region'],
+        ]));
+    }
+
+    $paths = boundary_http_paths($scope, $code);
+    $prepared = prepare_boundary_geojson($scope, $code, $paths);
+    if (!$prepared['ok']) {
+        $status = (($prepared['error'] ?? '') === 'Boundary generation failed.') ? 404 : 500;
+        respond($status, $commonHeaders + ['Content-Type' => 'application/json'], json_encode([
+            'status' => 'error',
+            'error' => $prepared['error'] ?? 'Boundary unavailable.',
+            'details' => $prepared['details'] ?? [],
+        ]));
+    }
+
+    $headers = boundary_response_headers($scope, $code, $paths['geojson']);
+    $ifNoneMatch = trim((string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''));
+    if ($ifNoneMatch !== '' && hash_equals($headers['ETag'], $ifNoneMatch)) {
+        respond(304, $headers);
+    }
+
+    $ifModifiedSince = strtotime((string)($_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? ''));
+    $mtime = filemtime($paths['geojson']) ?: time();
+    if ($ifModifiedSince !== false && $ifModifiedSince >= $mtime) {
+        respond(304, $headers);
+    }
+
+    respond(200, $headers, (string)file_get_contents($paths['geojson']));
 }
 
 function render_homepage(): string
@@ -585,6 +828,7 @@ function render_homepage(): string
         <ul>
           <li><code>GET /tiles/health</code> for lightweight health checks</li>
           <li><code>GET /api/status</code> for operational metadata</li>
+          <li><code>GET /boundaries/{scope}/{code}.geojson</code> for public hub boundary overlays</li>
           <li><code>GET /tiles/raster/0/0/0.png</code> for a sample tile fetch</li>
         </ul>
       </section>
@@ -606,7 +850,7 @@ function render_homepage(): string
       <h2 id="endpoints-heading">Available Endpoints</h2>
       <p class="section-intro">Complete endpoint reference with examples and cache behavior.</p>
       <div id="endpoints-grid" data-helper-placeholder="createGrid">
-        <p class="fallback-copy">JavaScript loads the searchable endpoint grid here. Core routes include <code>/tiles/health</code>, <code>/api/status</code>, and the tile proxy paths.</p>
+        <p class="fallback-copy">JavaScript loads the searchable endpoint grid here. Core routes include <code>/tiles/health</code>, <code>/api/status</code>, <code>/boundaries/{scope}/{code}.geojson</code>, and the tile proxy paths.</p>
       </div>
     </section>
 
@@ -711,6 +955,7 @@ if ($path[0] !== '/') {
 
 $scriptName = (string)($_SERVER['SCRIPT_NAME'] ?? '');
 $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+$scriptBase = basename(str_replace('\\', '/', $scriptName));
 $debugEnabled = isset($_GET['debug']) && $_GET['debug'] === '1';
 if ($debugEnabled) {
     header('X-Debug-Request-Uri: ' . $rawRequestUri);
@@ -719,10 +964,10 @@ if ($debugEnabled) {
     header('X-Debug-Script-Dir: ' . $scriptDir);
 }
 
-if ($scriptName !== '' && strpos($path, $scriptName) === 0) {
+if ($scriptBase === 'index.php' && $scriptName !== '' && strpos($path, $scriptName) === 0) {
     $path = substr($path, strlen($scriptName));
 } else {
-    if ($scriptDir !== '' && $scriptDir !== '.' && $scriptDir !== '/' && strpos($path, $scriptDir) === 0) {
+    if ($scriptBase === 'index.php' && $scriptDir !== '' && $scriptDir !== '.' && $scriptDir !== '/' && strpos($path, $scriptDir) === 0) {
         $path = substr($path, strlen($scriptDir));
     }
 }
@@ -764,6 +1009,20 @@ if (($path === '/tiles/health' || $path === '/health') && $method === 'GET') {
         'X-Cache' => 'BYPASS',
     ];
     respond(200, $headers, json_encode(['status' => 'ok', 'time' => date('c')]));
+}
+
+if (preg_match('~^/boundaries/([^/]+)/([A-Za-z0-9_-]+)\.geojson$~', $path, $m) && $method === 'GET') {
+    serve_boundary_geojson($m[1], $m[2], $commonHeaders);
+}
+
+if (preg_match('~^/api/boundaries/([^/]+)/([A-Za-z0-9_-]+)$~', $path, $m) && $method === 'GET') {
+    serve_boundary_geojson($m[1], $m[2], $commonHeaders);
+}
+
+if ($path === '/boundaries.geojson' && $method === 'GET') {
+    $scope = normalize_boundary_scope((string)($_GET['scope'] ?? $_GET['level'] ?? ''));
+    $code = $scope !== '' ? boundary_code_from_request($scope, $_GET) : '';
+    serve_boundary_geojson($scope, $code, $commonHeaders);
 }
 
 $isPurge = false;

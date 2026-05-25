@@ -40,6 +40,8 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\prepare-boundaries.php `
 
 `tools/prepare-boundaries.php` reads source ZIP/CSV files from `resources/boundaries` by default, extracts the WGS84 Level 4 shapefile into `storage/boundaries`, writes plain GeoJSON, and writes an index JSON containing barangay names and PSGC codes. It does not require GDAL or Composer dependencies. Download remains a manual fallback only when source files are missing and `--no-download` is not supplied.
 
+The same vendored boundary resources power the public overlay endpoint `GET /boundaries/{scope}/{code}.geojson`. See `docs/boundary-overlay-contract.md` for the browser/API contract used by Hotline and other map clients.
+
 Some Hub/Kit barangay inputs may use legacy Cebu City-style codes such as `072217029` or `072217003`. MapServer accepts these by matching against the shapefile source PSGC code and resolves them to the current PSGC CSV barangay code when writing GeoJSON properties. Verified examples:
 
 | Input code | Resolved barangay | Current `brgy_code` | `source_psgc_code` |

@@ -81,6 +81,18 @@ Kit passes Hub deployment location into `mapserver.data_prep.prepare`:
 
 MapServer resolves those codes using vendored boundary files under `resources/boundaries` and writes generated GeoJSON/cache outputs under `storage/boundaries`.
 
+## Public Boundary Overlays
+
+MapServer serves browser-consumable GeoJSON overlays from the same vendored boundary resources:
+
+```http
+GET /boundaries/{scope}/{code}.geojson
+GET /api/boundaries/{scope}/{code}
+GET /boundaries.geojson?scope={scope}&code={code}
+```
+
+Scopes are `barangay`, `city`, `province`, and `region`; `other` maps to `barangay`. Query aliases match Relay public hub identity fields: `relay_hub_id`/`brgy_code`, `citymun_code`, `prov_code`, and `reg_code`. Responses are public GeoJSON `FeatureCollection` documents with `Access-Control-Allow-Origin: *`, `ETag`, `Last-Modified`, `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`, and `X-PBB-Boundary-*` metadata headers. Full contract: `docs/boundary-overlay-contract.md`.
+
 ## Data Prep TLS
 
 Populate requests to `https://mapserver.pbb.ph` may need Kit's CA bundle because local PBB certificates are not always trusted by PHP cURL. Kit should prefer:

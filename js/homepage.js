@@ -110,6 +110,19 @@ const endpointReference = [
     expectedHeaders: ['Content-Type: application/x-protobuf', 'Content-Encoding: gzip (upstream-dependent)', 'X-Cache: MISS/HIT'],
     exampleLabel: '/tiles/poi/0/0/0.pbf',
   },
+  {
+    id: 'boundary',
+    method: 'GET',
+    path: '/boundaries/{scope}/{code}.geojson',
+    testPath: '/boundaries/barangay/072217029.geojson',
+    mimeType: 'application/geo+json',
+    description: 'Public hub boundary GeoJSON overlays generated from vendored PSGC resources.',
+    cached: true,
+    ttl: 'Generated file cache with HTTP validators',
+    cacheBehavior: 'Generated then HIT',
+    expectedHeaders: ['Content-Type: application/geo+json', 'ETag', 'Access-Control-Allow-Origin: *'],
+    exampleLabel: '/boundaries/barangay/072217029.geojson',
+  },
 ];
 
 const serviceStatus = {
@@ -479,6 +492,14 @@ function buildIntegrationFieldsetData(status) {
           tone: 'info',
           span: 2,
           content: `Error behavior: ${errorGuidance}`,
+        },
+      ],
+      [
+        {
+          type: 'alert',
+          tone: 'info',
+          span: 2,
+          content: 'Boundary overlays are public GeoJSON at /boundaries/{scope}/{code}.geojson and are safe for operator and command map clients.',
         },
       ],
       [
