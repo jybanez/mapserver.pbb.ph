@@ -5,5 +5,5 @@ RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# Route tile, health, and api endpoints to index.php
-RewriteRule ^(tiles/.*|health|api/.*)$ index.php [L,QSA]
+# Route tile, boundary, health, and api endpoints to index.php
+RewriteRule ^(tiles/.*|boundaries/.*|boundaries\.geojson|health|api/.*)$ index.php [L,QSA]
