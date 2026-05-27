@@ -54,7 +54,7 @@ City-scope legacy inputs are also accepted. `citymun_code=072217` resolves again
 If GDAL is already available, a full export is still possible:
 
 ```powershell
-ogr2ogr -f GeoJSON storage\boundaries\PH_Adm4_BgySubMuns.geojson storage\boundaries\PH_Adm4_BgySubMuns\PH_Adm4_BgySubMuns.shp.shp
+ogr2ogr -f GeoJSON storage\boundaries\PH_Adm4_BgySubMuns.geojson storage\boundaries\PH_Adm4_BgySubMuns\BgySubMuns.shp.shp
 ```
 
 `ogr2ogr` is intentionally not required by MapServer itself. The populator consumes plain GeoJSON so node kits can ship a prepared subset or a full prepared boundary file.

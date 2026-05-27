@@ -86,6 +86,8 @@ MapServer includes vendored PSGC boundary source files under `resources/boundari
 
 These are permanent runtime assets. Generated boundary outputs and extracted shapefile cache files belong under `storage/boundaries`, while populated tiles remain under `storage/tiles`.
 
+The shapefile ZIP is intentionally pruned to the WGS84 `BgySubMuns.shp.*` set used by `tools/prepare-boundaries.php`. The upstream projected UTM copy is not shipped because MapServer rejects `PROJCS` shapefiles for boundary prep and overlay generation.
+
 Run barangay tile population through the Data Prep wrapper:
 
 ```

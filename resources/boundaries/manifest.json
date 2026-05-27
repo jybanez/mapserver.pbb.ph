@@ -7,8 +7,9 @@
   "files": [
     {
       "path": "PH_Adm4_BgySubMuns.shp.zip",
-      "sha256": "904ff4ad2a8cfcfc06d23a6f4109bb1b142689d4cb4a8863d8bf650e99476186",
-      "bytes": 382761836
+      "sha256": "0e22c45639e40a15712a9a1801d335c3b34bd2b6d7bfdcbef27aa560187b87a2",
+      "bytes": 185027922,
+      "contents": "WGS84 BgySubMuns.shp.* shapefile set only; projected UTM Zone 51N PH_Adm4_BgySubMuns.shp.* files are intentionally excluded because MapServer boundary prep selects only GEOGCS/non-PROJCS data."
     },
     {
       "path": "PH_Adm3_MuniCities.csv",
