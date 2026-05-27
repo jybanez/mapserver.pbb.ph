@@ -88,6 +88,8 @@ These are permanent runtime assets. Generated boundary outputs and extracted sha
 
 The shapefile ZIP is intentionally pruned to the WGS84 `BgySubMuns.shp.*` set used by `tools/prepare-boundaries.php`. The upstream projected UTM copy is not shipped because MapServer rejects `PROJCS` shapefiles for boundary prep and overlay generation.
 
+For deployment-specific Kit builds, MapServer can also use province-scoped packs under `resources/boundaries/provinces/{prov_code}` and omit the national shapefile ZIP from the app bundle. See `docs/boundary-pack-contract.md`.
+
 Run barangay tile population through the Data Prep wrapper:
 
 ```

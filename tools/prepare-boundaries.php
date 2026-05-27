@@ -136,6 +136,9 @@ function code_variants(string $value): array
     if (strlen($code) === 6 && $code[0] === '0' && $code[1] !== '0') {
         $variants[] = $code[1] . '0' . substr($code, 2);
     }
+    if (strlen($code) === 4 && $code[0] === '0' && $code[1] !== '0') {
+        $variants[] = $code[1] . '0' . substr($code, 2);
+    }
     if (strlen($code) === 8) {
         $variants[] = $code[0] . '0' . substr($code, 1);
     }
@@ -149,6 +152,76 @@ function code_matches(string $actual, string $target): bool
         return false;
     }
     return in_array($actual, code_variants($target), true);
+}
+
+function provided_boundary_codes(array $args): array
+{
+    $codes = [];
+    foreach (['brgy-code', 'citymun-code', 'prov-code', 'reg-code'] as $key) {
+        $code = normalize_code((string)($args[$key] ?? ''));
+        if ($code !== '') {
+            array_push($codes, ...code_variants($code));
+        }
+    }
+    return array_values(array_unique($codes));
+}
+
+function boundary_pack_matches_codes(array $pack, array $codes): bool
+{
+    if ($codes === []) {
+        return false;
+    }
+
+    $aliases = [];
+    foreach (($pack['aliases'] ?? []) as $alias) {
+        $alias = normalize_code((string)$alias);
+        if ($alias !== '') {
+            array_push($aliases, ...code_variants($alias));
+        }
+    }
+    $provinceCode = normalize_code((string)($pack['province_code'] ?? ''));
+    if ($provinceCode !== '') {
+        array_push($aliases, ...code_variants($provinceCode));
+    }
+    $aliases = array_values(array_unique($aliases));
+
+    foreach ($codes as $code) {
+        foreach ($aliases as $alias) {
+            if ($code === $alias || str_starts_with($code, $alias) || str_starts_with($alias, $code)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function resolve_boundary_source_zip(array $args, string $workDir): string
+{
+    if ((string)$args['source-zip'] !== '') {
+        return (string)$args['source-zip'];
+    }
+
+    $packsRoot = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'boundaries' . DIRECTORY_SEPARATOR . 'provinces';
+    if (is_dir($packsRoot)) {
+        $codes = provided_boundary_codes($args);
+        $manifests = glob($packsRoot . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'pack.json') ?: [];
+        foreach ($manifests as $manifestPath) {
+            $pack = json_decode((string)file_get_contents($manifestPath), true);
+            if (!is_array($pack) || !boundary_pack_matches_codes($pack, $codes)) {
+                continue;
+            }
+            $relativeZip = (string)($pack['outputs']['source_zip'] ?? '');
+            $zipPath = $relativeZip !== ''
+                ? dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativeZip)
+                : dirname($manifestPath) . DIRECTORY_SEPARATOR . 'BgySubMuns.shp.zip';
+            if (is_file($zipPath)) {
+                return $zipPath;
+            }
+        }
+    }
+
+    return default_boundary_source_file('PH_Adm4_BgySubMuns.shp.zip', $workDir);
 }
 
 function normalize_dbf_code(mixed $value): string
@@ -659,7 +732,7 @@ if (
 
 $workDir = (string)$args['work-dir'];
 ensure_dir($workDir);
-$sourceZip = (string)$args['source-zip'] !== '' ? (string)$args['source-zip'] : default_boundary_source_file('PH_Adm4_BgySubMuns.shp.zip', $workDir);
+$sourceZip = resolve_boundary_source_zip($args, $workDir);
 $adm3Csv = (string)$args['adm3-csv'] !== '' ? (string)$args['adm3-csv'] : default_boundary_source_file('PH_Adm3_MuniCities.csv', $workDir);
 $adm4Csv = (string)$args['adm4-csv'] !== '' ? (string)$args['adm4-csv'] : default_boundary_source_file('PH_Adm4_BgySubMuns.csv', $workDir);
 $scopeSlug = $scope !== '' ? $scope : 'boundary';

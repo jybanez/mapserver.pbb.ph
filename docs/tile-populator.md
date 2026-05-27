@@ -42,6 +42,8 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\prepare-boundaries.php `
 
 The same vendored boundary resources power the public overlay endpoint `GET /boundaries/{scope}/{code}.geojson`. See `docs/boundary-overlay-contract.md` for the browser/API contract used by Hotline and other map clients.
 
+MapServer can also use deployment-scoped province boundary packs under `resources/boundaries/provinces/{prov_code}` before falling back to the national shapefile ZIP. See `docs/boundary-pack-contract.md` for the pack layout, alias rules, and the PHP-only pack builder.
+
 Some Hub/Kit barangay inputs may use legacy Cebu City-style codes such as `072217029` or `072217003`. MapServer accepts these by matching against the shapefile source PSGC code and resolves them to the current PSGC CSV barangay code when writing GeoJSON properties. Verified examples:
 
 | Input code | Resolved barangay | Current `brgy_code` | `source_psgc_code` |
