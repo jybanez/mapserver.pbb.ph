@@ -9,6 +9,16 @@ const MAPSERVER_VERSION = '1.0.0';
 const MAPSERVER_DISPLAY_VERSION = 'v1-1.0.0';
 const MAPSERVER_REPOSITORY_URL = 'https://github.com/jybanez/mapserver.pbb.ph';
 
+function mapserver_repository_metadata(): array
+{
+    return [
+        'type' => 'github',
+        'owner' => 'jybanez',
+        'repo' => 'mapserver.pbb.ph',
+        'url' => MAPSERVER_REPOSITORY_URL,
+    ];
+}
+
 function installer_now(): string
 {
     return date('c');
@@ -72,7 +82,7 @@ function release_metadata(): array
         'milestone' => (int)($data['milestone'] ?? MAPSERVER_MILESTONE),
         'version' => (string)($data['version'] ?? MAPSERVER_VERSION),
         'display_version' => (string)($data['display_version'] ?? MAPSERVER_DISPLAY_VERSION),
-        'repository' => $data['repository'] ?? ['type' => 'git', 'url' => MAPSERVER_REPOSITORY_URL],
+        'repository' => $data['repository'] ?? mapserver_repository_metadata(),
         'build' => $data['build'] ?? null,
     ];
     return $release;

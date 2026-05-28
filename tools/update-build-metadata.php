@@ -14,6 +14,7 @@ Updates release.json to the Kit Setup versioning shape:
   milestone + version + display_version=v{milestone}-{version}
   build.version, build.id, build.built_at, build.git_commit, build.builder
   update.contract_version metadata for Kit's app bundle update contract
+  repository + updates source metadata for GitHub Releases updater discovery
 
 This is source/build tooling. Do not include it in a distributable app bundle unless Kit Setup explicitly asks for source tooling.
 
@@ -132,7 +133,9 @@ $release['milestone'] = $milestone;
 $release['version'] = $version;
 $release['display_version'] = "v{$milestone}-{$version}";
 $release['repository'] = [
-    'type' => 'git',
+    'type' => 'github',
+    'owner' => 'jybanez',
+    'repo' => 'mapserver.pbb.ph',
     'url' => 'https://github.com/jybanez/mapserver.pbb.ph',
 ];
 $release['build'] = [
@@ -156,6 +159,14 @@ $release['update'] = array_replace([
 $release['update']['contract_version'] = 1;
 if (!is_array($release['update']['from_versions'] ?? null) || $release['update']['from_versions'] === []) {
     $release['update']['from_versions'] = [$version];
+}
+$release['updates'] = array_replace([
+    'source' => 'github-releases',
+    'channel' => 'testing',
+], is_array($release['updates'] ?? null) ? $release['updates'] : []);
+$release['updates']['source'] = 'github-releases';
+if (!is_string($release['updates']['channel'] ?? null) || $release['updates']['channel'] === '') {
+    $release['updates']['channel'] = (string)($release['update']['channel'] ?? 'testing');
 }
 
 if ($args['dry-run']) {

@@ -8,6 +8,8 @@ MapServer follows the Kit Setup release identity shape:
 - `version`
 - `display_version` formatted as `v{milestone}-{version}`
 - `repository.type`
+- `repository.owner`
+- `repository.repo`
 - `repository.url`
 - `build.version`
 - `build.id`
@@ -17,6 +19,25 @@ MapServer follows the Kit Setup release identity shape:
 - `update.contract_version`
 - `update.channel`
 - `update.compatibility`
+- `updates.source`
+- `updates.channel`
+
+For updater discovery, root `release.json` must identify the official GitHub release source:
+
+```json
+{
+  "repository": {
+    "type": "github",
+    "owner": "jybanez",
+    "repo": "mapserver.pbb.ph",
+    "url": "https://github.com/jybanez/mapserver.pbb.ph"
+  },
+  "updates": {
+    "source": "github-releases",
+    "channel": "testing"
+  }
+}
+```
 
 Update source release metadata with:
 
@@ -31,6 +52,7 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\update-build-metadata.php --version 1.
 ```
 
 `tools\update-build-metadata.php` is source/build tooling. It should stay in the project repository, but release packaging should exclude source-only build tooling unless Kit Setup explicitly approves including it in a distributable bundle. The updater preserves or creates a testing `release.json.update` block for Kit's app bundle versioning/update contract.
+It also preserves/creates the official GitHub `repository` and `updates` metadata used by Kit's production Updater to discover app bundles from GitHub Releases.
 
 Current MapServer testing rebuilds use:
 

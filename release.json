@@ -9,7 +9,9 @@
     "release_name": "Initial Kit Setup Installer Contract",
     "type": "plain-php",
     "repository": {
-        "type": "git",
+        "type": "github",
+        "owner": "jybanez",
+        "repo": "mapserver.pbb.ph",
         "url": "https://github.com/jybanez/mapserver.pbb.ph"
     },
     "build": {
@@ -31,6 +33,10 @@
         "requires_data_prep_rerun": false,
         "requires_service_restart": false,
         "rollback_supported": true
+    },
+    "updates": {
+        "source": "github-releases",
+        "channel": "testing"
     },
     "requires": {
         "os": [
