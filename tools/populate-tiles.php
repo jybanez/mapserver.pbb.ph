@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-const POPULATOR_VERSION = '1.0.3';
+const POPULATOR_VERSION = '1.0.4';
 
 function usage(): string
 {
@@ -10,7 +10,7 @@ function usage(): string
 PBB MapServer tile populator
 
 Usage:
-  php tools/populate-tiles.php --base-url http://localhost/mapserver --source-geojson boundaries.geojson --brgy-code 730600041 --zooms 10-14 --types raster,vector --report report.json
+  php tools/populate-tiles.php --base-url http://localhost/mapserver --source-geojson boundaries.geojson --brgy-code 730600041 --zooms 10-14 --types vector --report report.json
   php tools/populate-tiles.php --base-url http://localhost/mapserver --center 10.324155,123.8984849 --radius-km 2 --zooms 10-14 --dry-run
   php tools/populate-tiles.php --base-url http://localhost/mapserver --bbox 123.88,10.30,123.92,10.35 --zooms 10-14
 
@@ -27,7 +27,7 @@ Options:
   --center            Center as lat,lon. Requires --radius-km.
   --radius-km         Radius in kilometers for --center.
   --zooms             Zoom list/range, for example 10-14 or 10,12,14. Default: 10-14
-  --types             Tile types: raster,vector,terrain,poi. Default: raster,vector
+  --types             Tile types: raster,vector,terrain,poi. Default: vector
   --report            JSON report path. Default: storage/installer/tile-populate-report.json
   --dry-run           Compute coverage without fetching tiles.
   --max-tiles         Safety ceiling before fetching. Default: 5000
@@ -61,7 +61,7 @@ function parse_args(array $argv): array
         'center' => '',
         'radius-km' => '',
         'zooms' => '10-14',
-        'types' => 'raster,vector',
+        'types' => 'vector',
         'report' => __DIR__ . '/../storage/installer/tile-populate-report.json',
         'dry-run' => false,
         'max-tiles' => '5000',
@@ -478,17 +478,24 @@ function point_in_ring(float $lon, float $lat, array $ring): bool
 function point_in_polygons(float $lon, float $lat, array $polygons): bool
 {
     foreach ($polygons as $polygon) {
-        if (!is_array($polygon) || count($polygon) === 0 || !point_in_ring($lon, $lat, $polygon[0])) {
-            continue;
+        if (point_in_polygon($lon, $lat, $polygon)) {
+            return true;
         }
-        for ($i = 1; $i < count($polygon); $i++) {
-            if (point_in_ring($lon, $lat, $polygon[$i])) {
-                continue 2;
-            }
-        }
-        return true;
     }
     return false;
+}
+
+function point_in_polygon(float $lon, float $lat, array $polygon): bool
+{
+    if (!is_array($polygon) || count($polygon) === 0 || !point_in_ring($lon, $lat, $polygon[0])) {
+        return false;
+    }
+    for ($i = 1; $i < count($polygon); $i++) {
+        if (point_in_ring($lon, $lat, $polygon[$i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 function bbox_from_center(float $lat, float $lon, float $radiusKm): array
@@ -549,6 +556,31 @@ function tile_bounds(int $x, int $y, int $zoom): array
 function point_in_bbox(float $lon, float $lat, array $bbox): bool
 {
     return $lon >= $bbox[0] && $lon <= $bbox[2] && $lat >= $bbox[1] && $lat <= $bbox[3];
+}
+
+function bboxes_intersect(array $a, array $b): bool
+{
+    return $a[0] <= $b[2] && $a[2] >= $b[0] && $a[1] <= $b[3] && $a[3] >= $b[1];
+}
+
+function polygon_bbox(array $polygon): array
+{
+    return polygons_bbox([$polygon]);
+}
+
+function polygon_entries(array $polygons): array
+{
+    $entries = [];
+    foreach ($polygons as $polygon) {
+        if (!is_array($polygon) || count($polygon) === 0) {
+            continue;
+        }
+        $entries[] = [
+            'polygon' => $polygon,
+            'bbox' => polygon_bbox($polygon),
+        ];
+    }
+    return $entries;
 }
 
 function orientation(float $ax, float $ay, float $bx, float $by, float $cx, float $cy): float
@@ -617,7 +649,7 @@ function segment_intersects_bbox(array $a, array $b, array $bbox): bool
     return false;
 }
 
-function tile_intersects_polygons(int $x, int $y, int $zoom, array $polygons): bool
+function tile_intersects_polygon(int $x, int $y, int $zoom, array $polygon): bool
 {
     $bounds = tile_bounds($x, $y, $zoom);
     [$west, $south, $east, $north] = $bounds;
@@ -629,32 +661,43 @@ function tile_intersects_polygons(int $x, int $y, int $zoom, array $polygons): b
         [$east, $north],
     ];
     foreach ($checks as $point) {
-        if (point_in_polygons($point[0], $point[1], $polygons)) {
+        if (point_in_polygon($point[0], $point[1], $polygon)) {
             return true;
         }
     }
-    foreach ($polygons as $polygon) {
-        foreach ($polygon as $ring) {
-            $count = count($ring);
-            for ($i = 0; $i < $count; $i++) {
-                $a = $ring[$i];
-                $b = $ring[($i + 1) % $count];
-                if (!isset($a[0], $a[1], $b[0], $b[1])) {
-                    continue;
-                }
-                if (point_in_polygons((float)$a[0], (float)$a[1], $polygons) && point_in_bbox((float)$a[0], (float)$a[1], $bounds)) {
-                    return true;
-                }
-                if (segment_intersects_bbox($a, $b, $bounds)) {
-                    return true;
-                }
+    foreach ($polygon as $ring) {
+        $count = count($ring);
+        for ($i = 0; $i < $count; $i++) {
+            $a = $ring[$i];
+            $b = $ring[($i + 1) % $count];
+            if (!isset($a[0], $a[1], $b[0], $b[1])) {
+                continue;
+            }
+            if (point_in_bbox((float)$a[0], (float)$a[1], $bounds)) {
+                return true;
+            }
+            if (segment_intersects_bbox($a, $b, $bounds)) {
+                return true;
             }
         }
     }
     return false;
 }
 
-function tiles_for_area(array $bbox, array $zooms, ?array $polygons): array
+function tile_intersects_polygon_entries(int $x, int $y, int $zoom, array $bounds, array $entries): bool
+{
+    foreach ($entries as $entry) {
+        if (!bboxes_intersect($entry['bbox'], $bounds)) {
+            continue;
+        }
+        if (tile_intersects_polygon($x, $y, $zoom, $entry['polygon'])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function tiles_for_area(array $bbox, array $zooms, ?array $polygonEntries, int $maxRequests, int $typeCount): array
 {
     [$minLon, $minLat, $maxLon, $maxLat] = validate_bbox($bbox);
 
@@ -667,10 +710,14 @@ function tiles_for_area(array $bbox, array $zooms, ?array $polygons): array
         $y2 = max(0, min($n, lat_to_tile_y($minLat, $zoom)));
         for ($x = min($x1, $x2); $x <= max($x1, $x2); $x++) {
             for ($y = min($y1, $y2); $y <= max($y1, $y2); $y++) {
-                if ($polygons !== null && !tile_intersects_polygons($x, $y, $zoom, $polygons)) {
+                $bounds = tile_bounds($x, $y, $zoom);
+                if ($polygonEntries !== null && !tile_intersects_polygon_entries($x, $y, $zoom, $bounds, $polygonEntries)) {
                     continue;
                 }
                 $tiles[] = ['z' => $zoom, 'x' => $x, 'y' => $y];
+                if ($maxRequests > 0 && count($tiles) * max(1, $typeCount) > $maxRequests) {
+                    fail("Refusing to plan more than {$maxRequests} tile requests because it exceeds --max-tiles. Narrow the area/zooms or raise --max-tiles.");
+                }
             }
         }
     }
@@ -758,6 +805,7 @@ $source = [
     'label' => '',
 ];
 $polygons = null;
+$polygonEntries = null;
 if ((string)$args['source-geojson'] !== '') {
     $loaded = load_geojson_features((string)$args['source-geojson'], (string)$args['brgy-code'], (string)$args['barangay'], (string)$args['city'], (string)$args['citymun-code'], (string)$args['prov-code'], (string)$args['reg-code']);
     $polygons = [];
@@ -765,6 +813,7 @@ if ((string)$args['source-geojson'] !== '') {
         $polygons = array_merge($polygons, geometry_polygons($feature['geometry']));
     }
     validate_polygons($polygons);
+    $polygonEntries = polygon_entries($polygons);
     $bbox = validate_bbox(polygons_bbox($polygons));
     $source = ['type' => 'geojson', 'label' => (string)$loaded['label'], 'features' => count($loaded['features'])];
 } elseif ((string)$args['bbox'] !== '') {
@@ -777,13 +826,9 @@ if ((string)$args['source-geojson'] !== '') {
 } else {
     fail('Provide --source-geojson, --bbox, or --center.');
 }
-
-$tiles = tiles_for_area($bbox, $zooms, $polygons);
-$attemptsPlanned = count($tiles) * count($types);
 $maxTiles = parse_positive_int((string)$args['max-tiles'], '--max-tiles');
-if (!$args['dry-run'] && $attemptsPlanned > $maxTiles) {
-    fail("Refusing to fetch {$attemptsPlanned} tile requests because it exceeds --max-tiles {$maxTiles}. Narrow the area/zooms or raise --max-tiles.");
-}
+$tiles = tiles_for_area($bbox, $zooms, $polygonEntries, $maxTiles, count($types));
+$attemptsPlanned = count($tiles) * count($types);
 
 $baseUrl = rtrim((string)$args['base-url'], '/');
 $limit = (string)$args['limit'] === '' ? 0 : parse_positive_int((string)$args['limit'], '--limit');

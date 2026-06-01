@@ -69,7 +69,7 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\populate-tiles.php `
   --source-geojson storage\boundaries\mapserver-data-prep-barangay-730600041.geojson `
   --brgy-code 730600041 `
   --zooms 10-14 `
-  --types raster,vector `
+  --types vector `
   --ca-bundle C:\ProgramData\PBB\KitSetup\certs\ca-bundle.pem `
   --dry-run `
   --report C:\pbb\reports\mapserver-populate-lahug-dry-run.json
@@ -83,7 +83,7 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\populate-tiles.php `
   --source-geojson storage\boundaries\mapserver-data-prep-barangay-730600041.geojson `
   --brgy-code 730600041 `
   --zooms 10-14 `
-  --types raster,vector `
+  --types vector `
   --ca-bundle C:\ProgramData\PBB\KitSetup\certs\ca-bundle.pem `
   --max-tiles 5000 `
   --report C:\pbb\reports\mapserver-populate-lahug.json
@@ -125,7 +125,7 @@ Preferred Kit contract for current-barangay Data Prep:
         "city": "Cebu City",
         "boundary_work_dir": "storage\\boundaries",
         "zooms": "10-14",
-        "types": "raster,vector",
+        "types": "vector",
         "max_tiles": 5000,
         "curl_ssl_verify": true,
         "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem"
@@ -170,7 +170,16 @@ The following current-repo runs were verified against `http://localhost/mapserve
 | `072217003` | Apas, Cebu City (`730600003`) | 8 | 16 | 16 succeeded, 0 failed |
 | city `072217`, zooms `10-12` | Cebu City, 80 boundary features | 16 | 32 | 32 succeeded, 0 failed |
 
-City-wide polygon filtering at zooms `10-14` can be slow because the populator checks all generated city barangay polygons against candidate tiles. For operator use, start city/province/region scopes with a dry-run and conservative zooms, then raise zooms only after reviewing the planned tile count and runtime.
+City/province polygon filtering uses per-polygon bounding boxes before exact tile intersection checks, so city scope does not scan every barangay polygon for every candidate tile. For current PBB deployments, Kit should pass or allow the default `types=vector`; adding raster doubles the request count for the same coverage and is unnecessary while clients use vector tiles only.
+
+Recommended Kit starting points:
+
+| Scope | Suggested zooms | Suggested types | Notes |
+| --- | --- | --- | --- |
+| barangay | `10-14` | `vector` | Exact polygon coverage is small and fast. |
+| city | `12-14` or `10-14` | `vector` | Cebu City `072217` dry-run plans 103 vector requests at `12-14`. |
+| province | `8-12` first | `vector` | Start with dry-run and raise zooms only after reviewing planned requests. |
+| region | `7-11` first | `vector` | Treat as a broad preload, not a detailed cache warm. |
 
 Example real population command through the Data Prep wrapper:
 
@@ -209,7 +218,7 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\populate-tiles.php `
 ## Guardrails
 
 - Default zooms are `10-14`; avoid high zooms until the planned tile count is known.
-- Default types are `raster,vector`; `terrain` and `poi` can be added when MapTiler credentials are configured.
+- Default types are `vector` because current PBB map clients use vector tiles only. Add `raster`, `terrain`, or `poi` explicitly only when the consuming app needs them and provider credentials are configured.
 - `--max-tiles` prevents accidental large upstream pulls.
 - `--limit` can cap a live run after the coverage is computed.
 - HTTPS population through a local/self-signed PBB domain must either provide a trusted CA bundle through `curl_ca_bundle` / `--ca-bundle`, or explicitly set `curl_ssl_verify=false` / `--no-ssl-verify` for controlled local setup runs. Prefer a CA bundle whenever Kit has one.
