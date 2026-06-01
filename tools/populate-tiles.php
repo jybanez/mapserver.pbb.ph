@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-const POPULATOR_VERSION = '1.0.2';
+const POPULATOR_VERSION = '1.0.3';
 
 function usage(): string
 {
@@ -218,6 +218,12 @@ function code_variants(string $value): array
     if (strlen($code) === 6 && $code[0] === '0' && $code[1] !== '0') {
         $variants[] = $code[1] . '0' . substr($code, 2);
     }
+    if (strlen($code) === 4 && $code[0] === '0' && $code[1] !== '0') {
+        $variants[] = $code[1] . '0' . substr($code, 2);
+    }
+    if (strlen($code) === 2 && $code[0] === '0' && $code[1] !== '0') {
+        $variants[] = $code[1] . '0';
+    }
     if (strlen($code) === 8) {
         $variants[] = $code[0] . '0' . substr($code, 1);
     }
@@ -319,15 +325,17 @@ function feature_matches_admin_codes(array $feature, string $citymunCode, string
     $featureReg = normalize_code(property_value($properties, ['adm1_psgc', 'reg_code', 'region_code']));
     $sourcePsgc = normalize_code(property_value($properties, ['source_psgc_code', 'psgc']));
     $sourceCitymun = strlen($sourcePsgc) >= 6 ? substr($sourcePsgc, 0, 6) : '';
+    $sourceProv = strlen($sourcePsgc) >= 4 ? substr($sourcePsgc, 0, 4) : '';
+    $sourceReg = strlen($sourcePsgc) >= 2 ? substr($sourcePsgc, 0, 2) : '';
 
     return ($citymunCode === '' || code_matches($featureCitymun, $citymunCode) || code_matches($sourceCitymun, $citymunCode))
-        && ($provCode === '' || code_matches($featureProv, $provCode))
-        && ($regCode === '' || code_matches($featureReg, $regCode));
+        && ($provCode === '' || code_matches($featureProv, $provCode) || code_matches($sourceProv, $provCode))
+        && ($regCode === '' || code_matches($featureReg, $regCode) || code_matches($sourceReg, $regCode));
 }
 
 function load_geojson_features(string $path, string $brgyCode, string $barangay, string $city, string $citymunCode, string $provCode, string $regCode): array
 {
-    if ($brgyCode !== '' || $barangay !== '' || $city !== '') {
+    if ($brgyCode !== '' || $barangay !== '') {
         $feature = load_geojson_feature($path, $brgyCode, $barangay, $city);
         return [
             'features' => [$feature],
