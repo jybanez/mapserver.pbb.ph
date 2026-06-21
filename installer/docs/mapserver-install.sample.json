@@ -20,6 +20,9 @@
     "startup_mode": "automatic",
     "registration_mode": "generate"
   },
+  "runtime": {
+    "pbb_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt"
+  },
   "secrets": {
     "policy": "kit-shared-defaults",
     "values": {
@@ -44,7 +47,8 @@
     "terrain_base_url": "",
     "poi_base_url": "",
     "curl_ssl_verify": true,
-    "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem",
+    "pbb_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt",
+    "curl_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt",
     "populate": {
       "enabled": false,
       "source_geojson": "storage\\boundaries\\mapserver-data-prep-barangay-730600041.geojson",
@@ -55,7 +59,7 @@
       "types": "vector",
       "max_tiles": 5000,
       "curl_ssl_verify": true,
-      "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem",
+      "curl_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt",
       "dry_run": true
     },
     "data_prep": {
@@ -71,7 +75,7 @@
         "max_tiles": 5000,
         "timeout": 20,
         "curl_ssl_verify": true,
-        "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem"
+        "curl_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt"
       },
       "verify": {
         "base_url": "http://localhost/mapserver"

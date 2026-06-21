@@ -14,9 +14,11 @@
    - `TILES_LOG_FILE`
    - `TILES_PURGE_TOKEN`
    - `TILES_CURL_SSL_VERIFY` (set to `0` to disable SSL verification)
+   - `PBB_CA_BUNDLE` (Kit-managed CA bundle path for local PBB HTTPS calls)
    - `TILES_CURL_CA_BUNDLE` (path to CA bundle file)
 
 For Kit Setup installs, the installer normally writes only `TILES_PURGE_TOKEN`, `STADIAMAPS_API_KEY`, and `MAPTILER_API_KEY` into `.env` for the default provider path. Built-in/default tile URL templates and placeholder URLs such as `example.test` are intentionally omitted so `config.php` can build the provider URLs from the shared keys.
+When Kit provides a local PBB CA bundle, the installer writes both `PBB_CA_BUNDLE` and the backward-compatible `TILES_CURL_CA_BUNDLE`.
 
 ## Apache mod_rewrite (WAMP)
 ```
@@ -78,17 +80,17 @@ curl -I --compressed http://localhost/tiles/poi/0/0/0.pbf
 Second response should show `X-Cache: HIT`.
 
 ## Data Prep Boundaries
-MapServer includes vendored PSGC boundary source files under `resources/boundaries`:
+MapServer uses PSGC boundary source files under `resources/boundaries`:
 
 - `PH_Adm4_BgySubMuns.shp.zip`
 - `PH_Adm3_MuniCities.csv`
 - `PH_Adm4_BgySubMuns.csv`
 
-These are permanent runtime assets. Generated boundary outputs and extracted shapefile cache files belong under `storage/boundaries`, while populated tiles remain under `storage/tiles`.
+These are permanent runtime assets when present in the app bundle or a Kit-applied supplemental boundary pack. Generated boundary outputs and extracted shapefile cache files belong under `storage/boundaries`, while populated tiles remain under `storage/tiles`.
 
 The shapefile ZIP is intentionally pruned to the WGS84 `BgySubMuns.shp.*` set used by `tools/prepare-boundaries.php`. The upstream projected UTM copy is not shipped because MapServer rejects `PROJCS` shapefiles for boundary prep and overlay generation.
 
-For deployment-specific Kit builds, MapServer can also use province-scoped packs under `resources/boundaries/provinces/{prov_code}` and omit the national shapefile ZIP from the app bundle. See `docs/boundary-pack-contract.md`.
+The current Kit packaging path omits the heavy national shapefile ZIP from the app bundle and uses province-scoped packs under `resources/boundaries/provinces/{prov_code}`. See `docs/boundary-pack-contract.md`.
 
 Run barangay tile population through the Data Prep wrapper:
 
@@ -96,7 +98,7 @@ Run barangay tile population through the Data Prep wrapper:
 C:\wamp64\bin\php\php8.2.29\php.exe tools\data-prep\prepare.php --mode initial --config C:\pbb\configs\mapserver-data-prep.json --report C:\pbb\reports\mapserver-data-prep-prepare.json
 ```
 
-When Data Prep populates tiles through an HTTPS PBB domain with a local/self-signed certificate, provide `mapserver.data_prep.prepare.curl_ca_bundle` in the Kit config. For controlled local setup runs only, `mapserver.data_prep.prepare.curl_ssl_verify=false` disables verification for the populator.
+When Data Prep populates tiles through an HTTPS PBB domain with a local/self-signed certificate, Kit should provide the shared `runtime.pbb_ca_bundle`/`PBB_CA_BUNDLE` path and may also pass `mapserver.data_prep.prepare.curl_ca_bundle` for an individual run. Packaged installs should keep SSL verification enabled.
 
 The wrapper can resolve Hub/Kit barangay codes such as `072217029` and `072217003` from the vendored boundary data, then populate the matching local tile coverage. See `docs/tile-populator.md` for the full Data Prep contract and verified population examples.
 

@@ -131,6 +131,7 @@ $buildId = $args['build-id'] !== '' ? (string)$args['build-id'] : 'source-' . (n
 
 $release['milestone'] = $milestone;
 $release['version'] = $version;
+$release['display_name'] = (string)($release['display_name'] ?? 'MapServer');
 $release['display_version'] = "v{$milestone}-{$version}";
 $release['repository'] = [
     'type' => 'github',
@@ -167,6 +168,27 @@ $release['updates'] = array_replace([
 $release['updates']['source'] = 'github-releases';
 if (!is_string($release['updates']['channel'] ?? null) || $release['updates']['channel'] === '') {
     $release['updates']['channel'] = (string)($release['update']['channel'] ?? 'testing');
+}
+$release['requires'] = is_array($release['requires'] ?? null) ? $release['requires'] : [];
+$release['requires']['runtime'] = array_replace([
+    'pbb_ca_bundle' => true,
+], is_array($release['requires']['runtime'] ?? null) ? $release['requires']['runtime'] : []);
+$release['landing'] = array_replace([
+    'launcher' => [
+        'logo_kind' => 'mark',
+        'icon' => 'map',
+        'primary_launch_url' => 'https://mapserver.pbb.ph/',
+        'audience' => ['admin', 'support'],
+    ],
+    'public_gateway' => [
+        'enabled' => false,
+    ],
+], is_array($release['landing'] ?? null) ? $release['landing'] : []);
+$release['landing']['public_gateway'] = array_replace([
+    'enabled' => false,
+], is_array($release['landing']['public_gateway'] ?? null) ? $release['landing']['public_gateway'] : []);
+if (!array_key_exists('runtime_services', $release) || !is_array($release['runtime_services'])) {
+    $release['runtime_services'] = [];
 }
 
 if ($args['dry-run']) {

@@ -835,7 +835,13 @@ $limit = (string)$args['limit'] === '' ? 0 : parse_positive_int((string)$args['l
 $timeout = parse_positive_int((string)$args['timeout'], '--timeout');
 $caBundle = (string)$args['ca-bundle'];
 if ($caBundle === '') {
-    $caBundle = env_value('TILES_CURL_CA_BUNDLE') !== '' ? env_value('TILES_CURL_CA_BUNDLE') : env_value('CURL_CA_BUNDLE');
+    foreach (['PBB_CA_BUNDLE', 'TILES_CURL_CA_BUNDLE', 'CURL_CA_BUNDLE'] as $envName) {
+        $candidate = env_value($envName);
+        if ($candidate !== '') {
+            $caBundle = $candidate;
+            break;
+        }
+    }
 }
 if ($caBundle === '') {
     $caBundle = env_value('SSL_CERT_FILE');

@@ -2,6 +2,7 @@
     "schema_version": 1,
     "app": "pbb-mapserver",
     "name": "PBB MapServer",
+    "display_name": "MapServer",
     "milestone": 1,
     "version": "1.0.0",
     "display_version": "v1-1.0.0",
@@ -53,6 +54,9 @@
         "mysql": "not-required",
         "node": "not-required",
         "composer": "not-required",
+        "runtime": {
+            "pbb_ca_bundle": true
+        },
         "apps": {}
     },
     "installer": {
@@ -93,6 +97,21 @@
         "ready": "/api/status",
         "status": "/api/status"
     },
+    "landing": {
+        "launcher": {
+            "logo_kind": "mark",
+            "icon": "map",
+            "primary_launch_url": "https://mapserver.pbb.ph/",
+            "audience": [
+                "admin",
+                "support"
+            ]
+        },
+        "public_gateway": {
+            "enabled": false
+        }
+    },
+    "runtime_services": [],
     "services": [
         {
             "id": "pbb-mapserver-web",

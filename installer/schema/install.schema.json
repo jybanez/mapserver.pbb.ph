@@ -38,6 +38,13 @@
       },
       "additionalProperties": true
     },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "pbb_ca_bundle": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
     "secrets": {
       "type": "object",
       "properties": {
@@ -77,6 +84,7 @@
         "stadiamaps_api_key": { "type": "string" },
         "maptiler_api_key": { "type": "string" },
         "curl_ssl_verify": { "type": "boolean" },
+        "pbb_ca_bundle": { "type": "string" },
         "curl_ca_bundle": { "type": "string" },
         "populate": {
           "type": "object",

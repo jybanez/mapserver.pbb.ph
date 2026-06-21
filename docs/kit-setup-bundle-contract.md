@@ -4,19 +4,25 @@ This document records MapServer's current contract with PBB Kit Setup.
 
 ## Canonical Bundle
 
-Kit consumes the canonical package at:
+MapServer publishes the canonical app-team handoff package at:
+
+```text
+C:\wamp64\www\pbb\mapserver\dist\pbb-mapserver-1.0.0.zip
+```
+
+Kit accepts the reviewed handoff by copying it to:
 
 ```text
 C:\wamp64\www\pbb\kit-setup\packages\bundled\pbb-mapserver-1.0.0.zip
 ```
 
-Whenever the bundle is rebuilt, update the `pbb-mapserver` entry in:
+Whenever Kit accepts a rebuilt bundle, update the `pbb-mapserver` entry in:
 
 ```text
 C:\wamp64\www\pbb\kit-setup\packages\packages.bundled.json
 ```
 
-The bundle must include `checksums.sha256`, and extracted verification must report `bad_count=0`.
+The bundle must include `release.json`, `checksums.sha256`, and extracted verification must report `bad_count=0`. `release.json` declares `display_name=MapServer`, `landing.launcher`, `landing.public_gateway.enabled=false`, `runtime_services=[]`, GitHub release update metadata, and `requires.runtime.pbb_ca_bundle=true`.
 
 ## Shared Provider Defaults
 
@@ -105,14 +111,24 @@ Populate requests to `https://mapserver.pbb.ph` may need Kit's CA bundle because
     "data_prep": {
       "prepare": {
         "curl_ssl_verify": true,
-        "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem"
+        "curl_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt"
       }
     }
   }
 }
 ```
 
-Controlled local fallback may set `curl_ssl_verify=false`, which MapServer forwards to `tools/populate-tiles.php` as `--no-ssl-verify`.
+Kit may also provide the shared runtime input:
+
+```json
+{
+  "runtime": {
+    "pbb_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt"
+  }
+}
+```
+
+The installer writes that path to `PBB_CA_BUNDLE` and the legacy `TILES_CURL_CA_BUNDLE` in `.env`. Runtime tile requests and Data Prep population both accept `PBB_CA_BUNDLE`. Controlled local fallback may set `curl_ssl_verify=false`, which MapServer forwards to `tools/populate-tiles.php` as `--no-ssl-verify`, but packaged Kit installs should prefer the CA bundle path.
 
 The child populator report includes:
 

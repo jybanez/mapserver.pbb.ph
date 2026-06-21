@@ -6,6 +6,7 @@ MapServer follows the Kit Setup release identity shape:
 
 - `milestone`
 - `version`
+- `display_name`
 - `display_version` formatted as `v{milestone}-{version}`
 - `repository.type`
 - `repository.owner`
@@ -21,6 +22,10 @@ MapServer follows the Kit Setup release identity shape:
 - `update.compatibility`
 - `updates.source`
 - `updates.channel`
+- `requires.runtime.pbb_ca_bundle`
+- `landing.launcher`
+- `landing.public_gateway`
+- `runtime_services`
 
 For updater discovery, root `release.json` must identify the official GitHub release source:
 
@@ -74,7 +79,9 @@ Current MapServer testing rebuilds use:
 
 ## Trusted Kit Bundle Build
 
-The canonical Kit package is `C:\wamp64\www\pbb\kit-setup\packages\bundled\pbb-mapserver-1.0.0.zip`. After rebuilding it, update `C:\wamp64\www\pbb\kit-setup\packages\packages.bundled.json` with the ZIP SHA256 so Kit can verify the embedded package.
+The canonical app-team handoff package is `C:\wamp64\www\pbb\mapserver\dist\pbb-mapserver-1.0.0.zip`. Kit accepts the reviewed handoff by copying it to `C:\wamp64\www\pbb\kit-setup\packages\bundled\pbb-mapserver-1.0.0.zip`. After Kit accepts a rebuilt bundle, update `C:\wamp64\www\pbb\kit-setup\packages\packages.bundled.json` with the ZIP SHA256 so Kit can verify the embedded package.
+
+MapServer has no background daemon, so `release.json.runtime_services` is an empty array. MapServer does make outbound HTTPS calls from PHP/cURL during tile proxying and Data Prep population, so it declares `requires.runtime.pbb_ca_bundle=true` and consumes Kit's shared `PBB_CA_BUNDLE` path. The installer also writes the same path to `TILES_CURL_CA_BUNDLE` for older MapServer config paths.
 
 Shared provider credentials are build-time injected defaults. Do not commit live `STADIAMAPS_API_KEY` or `MAPTILER_API_KEY` values into this repo. During a trusted package build, inject `resources/kit-setup/shared-install-defaults.json` into the ZIP with this shape:
 
@@ -109,8 +116,10 @@ The injected file must also be represented in the ZIP's `checksums.sha256`. The 
 - Source checksum scan with `bad_count=0`.
 - Extracted bundle checksum scan with `bad_count=0`.
 - Bundle SHA256 matching `packages.bundled.json`.
+- App-team handoff ZIP present in `C:\wamp64\www\pbb\mapserver\dist`.
 - `release.json.version` matching `pbb-mapserver-1.0.0.zip`.
 - Unique `release.json.build.id` for the produced ZIP.
+- `release.json.display_name`, `landing.launcher`, `landing.public_gateway.enabled=false`, `runtime_services=[]`, and `requires.runtime.pbb_ca_bundle=true`.
 - `release.json.update.compatibility=same-version-rebuild` while the `1.0.0` bundle remains in testing.
 - Presence/schema check for the injected shared defaults file.
 - Data Prep dry-run for a known code such as `072217029`.

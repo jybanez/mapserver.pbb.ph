@@ -101,7 +101,7 @@ return [
     'log_file' => env('TILES_LOG_FILE') ?: (__DIR__ . '/storage/logs/tiles.log'),
     'purge_token' => env('TILES_PURGE_TOKEN') ?: '',
     'curl_ssl_verify' => $curlSslVerify,
-    'curl_ca_bundle' => env('TILES_CURL_CA_BUNDLE') ?: '',
+    'curl_ca_bundle' => env('PBB_CA_BUNDLE') ?: (env('TILES_CURL_CA_BUNDLE') ?: (env('CURL_CA_BUNDLE') ?: '')),
 
     // Upstream URL templates
     'raster_base_url' => $rasterBaseUrl,

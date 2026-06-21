@@ -5,7 +5,7 @@
 Populate requests can exercise two TLS paths:
 
 - Populator-to-MapServer TLS, controlled by `--ca-bundle`, `--no-ssl-verify`, `curl_ca_bundle`, and `curl_ssl_verify`.
-- MapServer-to-upstream-provider TLS, controlled by the installed `.env` values consumed by `config.php`, especially `TILES_CURL_CA_BUNDLE` and `TILES_CURL_SSL_VERIFY`.
+- MapServer-to-upstream-provider TLS, controlled by the installed `.env` values consumed by `config.php`, especially Kit's shared `PBB_CA_BUNDLE`, the legacy `TILES_CURL_CA_BUNDLE`, and `TILES_CURL_SSL_VERIFY`.
 
 If a populate report shows every tile with `status: 0` and `SSL certificate problem: unable to get local issuer certificate`, the request did not reach MapServer. Fix the populator-to-MapServer trust path by providing a CA bundle or, only for controlled local setup fallback, disabling SSL verification for the populate run. If disabling verification changes the failure to an HTTP status such as `502`, the TLS handoff is fixed and the remaining problem is MapServer/upstream configuration.
 
@@ -70,7 +70,7 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\populate-tiles.php `
   --brgy-code 730600041 `
   --zooms 10-14 `
   --types vector `
-  --ca-bundle C:\ProgramData\PBB\KitSetup\certs\ca-bundle.pem `
+  --ca-bundle C:\wamp64\certs\pbb.ph\pbb.ph.fullchain.crt `
   --dry-run `
   --report C:\pbb\reports\mapserver-populate-lahug-dry-run.json
 ```
@@ -84,7 +84,7 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\populate-tiles.php `
   --brgy-code 730600041 `
   --zooms 10-14 `
   --types vector `
-  --ca-bundle C:\ProgramData\PBB\KitSetup\certs\ca-bundle.pem `
+  --ca-bundle C:\wamp64\certs\pbb.ph\pbb.ph.fullchain.crt `
   --max-tiles 5000 `
   --report C:\pbb\reports\mapserver-populate-lahug.json
 ```
@@ -128,7 +128,7 @@ Preferred Kit contract for current-barangay Data Prep:
         "types": "vector",
         "max_tiles": 5000,
         "curl_ssl_verify": true,
-        "curl_ca_bundle": "C:\\ProgramData\\PBB\\KitSetup\\certs\\ca-bundle.pem"
+        "curl_ca_bundle": "C:\\wamp64\\certs\\pbb.ph\\pbb.ph.fullchain.crt"
       }
     }
   }
@@ -221,7 +221,7 @@ C:\wamp64\bin\php\php8.2.29\php.exe tools\populate-tiles.php `
 - Default types are `vector` because current PBB map clients use vector tiles only. Add `raster`, `terrain`, or `poi` explicitly only when the consuming app needs them and provider credentials are configured.
 - `--max-tiles` prevents accidental large upstream pulls.
 - `--limit` can cap a live run after the coverage is computed.
-- HTTPS population through a local/self-signed PBB domain must either provide a trusted CA bundle through `curl_ca_bundle` / `--ca-bundle`, or explicitly set `curl_ssl_verify=false` / `--no-ssl-verify` for controlled local setup runs. Prefer a CA bundle whenever Kit has one.
+- HTTPS population through a local/self-signed PBB domain must provide a trusted CA bundle through Kit's `PBB_CA_BUNDLE`, `curl_ca_bundle`, or `--ca-bundle`.
 - The populator also reads `TILES_CURL_CA_BUNDLE`, `CURL_CA_BUNDLE`, `SSL_CERT_FILE`, and `TILES_CURL_SSL_VERIFY` from the process environment. Explicit config/CLI options are clearer for Kit reports.
 - Numeric guardrails such as `--max-tiles`, `--limit`, `--timeout`, and `--radius-km` must be positive values; invalid values fail instead of being silently coerced.
 - GeoJSON and bounding-box coordinates are validated as lon/lat. Antimeridian-crossing boxes are not supported; split those into two runs if ever needed.
