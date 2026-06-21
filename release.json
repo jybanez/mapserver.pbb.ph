@@ -17,9 +17,9 @@
     },
     "build": {
         "version": "1.0.0",
-        "id": "pbb-mapserver-20260621-111521",
-        "built_at": "2026-06-21T11:15:22+08:00",
-        "git_commit": "4797d1041f001c1afbec979fa1d95898d6b19e06",
+        "id": "pbb-mapserver-20260621-113628",
+        "built_at": "2026-06-21T11:36:29+08:00",
+        "git_commit": "a821bb8c99268dc060ad034bf7b580e8a18aa828",
         "builder": "pbb-mapserver-trusted-bundle"
     },
     "update": {
