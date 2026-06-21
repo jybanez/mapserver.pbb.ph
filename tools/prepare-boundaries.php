@@ -2,9 +2,28 @@
 
 declare(strict_types=1);
 
-const BOUNDARY_PREP_VERSION = '1.0.0';
+const BOUNDARY_PREP_VERSION = '1.0.1';
 const PSGC_REPO_RAW = 'https://raw.githubusercontent.com/altcoder/philippines-psgc-shapefiles/main/dist/';
 const PSGC_ZIP_URL = 'https://github.com/altcoder/philippines-psgc-shapefiles/raw/main/dist/PH_Adm4_BgySubMuns.shp.zip';
+
+$memoryLimit = ini_get('memory_limit');
+if ($memoryLimit !== false && $memoryLimit !== '-1') {
+    $bytes = (int)$memoryLimit;
+    if (preg_match('/^\s*(\d+)\s*([kmg])?\s*$/i', (string)$memoryLimit, $m)) {
+        $bytes = (int)$m[1];
+        $unit = strtolower((string)($m[2] ?? ''));
+        if ($unit === 'k') {
+            $bytes *= 1024;
+        } elseif ($unit === 'm') {
+            $bytes *= 1024 * 1024;
+        } elseif ($unit === 'g') {
+            $bytes *= 1024 * 1024 * 1024;
+        }
+    }
+    if ($bytes > 0 && $bytes < 512 * 1024 * 1024) {
+        ini_set('memory_limit', '512M');
+    }
+}
 
 function usage(): string
 {
@@ -138,6 +157,9 @@ function code_variants(string $value): array
     }
     if (strlen($code) === 4 && $code[0] === '0' && $code[1] !== '0') {
         $variants[] = $code[1] . '0' . substr($code, 2);
+    }
+    if (strlen($code) === 2 && $code[0] === '0' && $code[1] !== '0') {
+        $variants[] = $code[1] . '0';
     }
     if (strlen($code) === 8) {
         $variants[] = $code[0] . '0' . substr($code, 1);
@@ -854,13 +876,15 @@ read_shape_records($shpPath, $dbfPath, function (int $recordIndex, array $record
         return;
     }
     $sourceCitymunCode = strlen($psgc) >= 6 ? substr($psgc, 0, 6) : '';
+    $sourceProvCode = strlen($psgc) >= 4 ? substr($psgc, 0, 4) : '';
+    $sourceRegCode = strlen($psgc) >= 2 ? substr($psgc, 0, 2) : '';
     if ($targetCitymunCode !== '' && !code_matches((string)($meta['adm3_psgc'] ?? ''), $targetCitymunCode) && !code_matches($sourceCitymunCode, $targetCitymunCode)) {
         return;
     }
-    if ($targetProvCode !== '' && normalize_code((string)($meta['adm2_psgc'] ?? '')) !== $targetProvCode) {
+    if ($targetProvCode !== '' && !code_matches((string)($meta['adm2_psgc'] ?? ''), $targetProvCode) && !code_matches($sourceProvCode, $targetProvCode)) {
         return;
     }
-    if ($targetRegCode !== '' && normalize_code((string)($meta['adm1_psgc'] ?? '')) !== $targetRegCode) {
+    if ($targetRegCode !== '' && !code_matches((string)($meta['adm1_psgc'] ?? ''), $targetRegCode) && !code_matches($sourceRegCode, $targetRegCode)) {
         return;
     }
 

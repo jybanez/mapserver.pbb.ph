@@ -8,12 +8,15 @@ Preferred path form:
 
 ```http
 GET /boundaries/{scope}/{code}.geojson
+GET /boundaries/{scope}/{code}/children.geojson
+GET /boundaries/{scope}/{code}/barangays.geojson
 ```
 
 API alias:
 
 ```http
 GET /api/boundaries/{scope}/{code}
+GET /api/boundaries/{scope}/{code}?mode=children
 ```
 
 Query form for clients that map directly from Relay `/hub.json` fields:
@@ -25,6 +28,7 @@ GET /boundaries.geojson?scope=barangay&brgy_code={brgy_code}
 GET /boundaries.geojson?scope=city&citymun_code={citymun_code}
 GET /boundaries.geojson?scope=province&prov_code={prov_code}
 GET /boundaries.geojson?scope=region&reg_code={reg_code}
+GET /boundaries.geojson?scope=city&citymun_code={citymun_code}&mode=children
 ```
 
 ## Supported Scopes
@@ -58,7 +62,7 @@ GET https://mapserver.pbb.ph/boundaries/barangay/072217029.geojson
 
 ## Response Shape
 
-Successful responses are GeoJSON `FeatureCollection` documents:
+Successful responses are GeoJSON `FeatureCollection` documents. The primary `/boundaries/{scope}/{code}.geojson` response returns one requested-area perimeter feature. For `barangay`, that is the barangay polygon. For `city`, `province`, and `region`, MapServer dissolves matching barangay polygons into an exterior `Polygon` or `MultiPolygon` so clients can render the parent outline without internal barangay boundaries.
 
 ```json
 {
@@ -89,7 +93,19 @@ Successful responses are GeoJSON `FeatureCollection` documents:
 }
 ```
 
-Properties come from the vendored PSGC Level 4 boundary CSV/shapefile set. Scope responses may contain multiple barangay features: a city returns its barangays, a province returns its barangays, and a region returns its barangays. Clients should render the full `FeatureCollection` rather than assuming a single feature.
+Perimeter responses include `boundary_mode=perimeter`, `boundary_scope`, and `boundary_code` properties. Wider-scope perimeter responses also include `source_feature_count` and `perimeter_ring_count` so clients can inspect how many child polygons were dissolved.
+
+Clients that need subordinate barangay polygons must request them explicitly:
+
+```http
+GET /boundaries/{scope}/{code}/children.geojson
+GET /boundaries/{scope}/{code}/barangays.geojson
+GET /boundaries/{scope}/{code}.geojson?mode=children
+GET /api/boundaries/{scope}/{code}?mode=children
+GET /boundaries.geojson?scope={scope}&code={code}&mode=children
+```
+
+Child responses return the original PSGC Level 4 features from the vendored boundary CSV/shapefile set. A city child response returns its barangays, a province child response returns its barangays, and a region child response returns its barangays.
 
 ## Headers
 
@@ -103,6 +119,7 @@ ETag: "{sha256-of-geojson}"
 Last-Modified: {generated-file-mtime}
 X-PBB-Boundary-Scope: {scope}
 X-PBB-Boundary-Code: {code}
+X-PBB-Boundary-Mode: perimeter|children
 X-PBB-Boundary-Source: resources/boundaries
 X-PBB-Boundary-Version: {source-repository}@{captured_at}
 X-PBB-MapServer-Build: {release.build.id}
@@ -112,6 +129,6 @@ X-PBB-MapServer-Build: {release.build.id}
 
 ## Runtime Behavior
 
-Boundary source files are permanent package resources under `resources/boundaries`. Generated HTTP overlay files are cached under `storage/boundaries/http` and may be regenerated safely. The first request for a scope/code may take longer because MapServer prepares the GeoJSON from the vendored boundary source; subsequent requests are served from the generated cache.
+Boundary source files are permanent package resources under `resources/boundaries`. Generated HTTP overlay files are cached under `storage/boundaries/http` and may be regenerated safely. Primary perimeter responses and explicit child responses use separate cache files, so changing modes does not reuse stale geometry. The first request for a scope/code may take longer because MapServer prepares the GeoJSON from the vendored boundary source; subsequent requests are served from the generated cache.
 
 No API key, purge token, or auth token is required for boundary overlays.

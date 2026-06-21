@@ -1,6 +1,33 @@
 <?php
 $config = require __DIR__ . '/config.php';
 
+function ensure_php_memory_floor(int $minimumBytes): void
+{
+    $memoryLimit = ini_get('memory_limit');
+    if ($memoryLimit === false || $memoryLimit === '-1') {
+        return;
+    }
+
+    $bytes = (int)$memoryLimit;
+    if (preg_match('/^\s*(\d+)\s*([kmg])?\s*$/i', (string)$memoryLimit, $m)) {
+        $bytes = (int)$m[1];
+        $unit = strtolower((string)($m[2] ?? ''));
+        if ($unit === 'k') {
+            $bytes *= 1024;
+        } elseif ($unit === 'm') {
+            $bytes *= 1024 * 1024;
+        } elseif ($unit === 'g') {
+            $bytes *= 1024 * 1024 * 1024;
+        }
+    }
+
+    if ($bytes > 0 && $bytes < $minimumBytes) {
+        ini_set('memory_limit', (string)ceil($minimumBytes / (1024 * 1024)) . 'M');
+    }
+}
+
+ensure_php_memory_floor(1024 * 1024 * 1024);
+
 if (!function_exists('curl_init')) {
     http_response_code(500);
     header('Access-Control-Allow-Origin: *');
@@ -431,11 +458,22 @@ function boundary_php_binary(): string
     return PHP_BINARY;
 }
 
-function boundary_http_paths(string $scope, string $code): array
+function boundary_response_mode(string $mode): string
+{
+    $mode = strtolower(trim($mode));
+    if (in_array($mode, ['children', 'child', 'barangays', 'barangay', 'subordinate', 'details'], true)) {
+        return 'children';
+    }
+
+    return 'perimeter';
+}
+
+function boundary_http_paths(string $scope, string $code, string $mode = 'children'): array
 {
     $safeCode = preg_replace('/[^0-9A-Za-z_-]+/', '', $code) ?? '';
+    $safeMode = boundary_response_mode($mode);
     $baseDir = __DIR__ . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'boundaries' . DIRECTORY_SEPARATOR . 'http';
-    $base = $baseDir . DIRECTORY_SEPARATOR . $scope . '-' . $safeCode;
+    $base = $baseDir . DIRECTORY_SEPARATOR . $scope . '-' . $safeCode . '.' . $safeMode;
 
     return [
         'dir' => $baseDir,
@@ -444,6 +482,231 @@ function boundary_http_paths(string $scope, string $code): array
         'report' => $base . '.report.json',
         'lock' => $base . '.lock',
     ];
+}
+
+function boundary_coord_key(array $point): string
+{
+    return sprintf('%.12F,%.12F', (float)($point[0] ?? 0), (float)($point[1] ?? 0));
+}
+
+function boundary_ring_area(array $ring): float
+{
+    $area = 0.0;
+    $count = count($ring);
+    for ($i = 0; $i < $count - 1; $i++) {
+        $a = $ring[$i];
+        $b = $ring[$i + 1];
+        $area += (((float)$a[0]) * ((float)$b[1])) - (((float)$b[0]) * ((float)$a[1]));
+    }
+
+    return $area / 2.0;
+}
+
+function boundary_geometry_rings(array $geometry): array
+{
+    $type = (string)($geometry['type'] ?? '');
+    $coordinates = $geometry['coordinates'] ?? [];
+    if ($type === 'Polygon' && is_array($coordinates)) {
+        return $coordinates;
+    }
+
+    $rings = [];
+    if ($type === 'MultiPolygon' && is_array($coordinates)) {
+        foreach ($coordinates as $polygon) {
+            if (is_array($polygon)) {
+                foreach ($polygon as $ring) {
+                    $rings[] = $ring;
+                }
+            }
+        }
+    }
+
+    return $rings;
+}
+
+function boundary_dissolved_feature_collection(array $geojson, string $scope, string $code): array
+{
+    $features = is_array($geojson['features'] ?? null) ? $geojson['features'] : [];
+    $boundaryEdges = [];
+    $properties = [
+        'boundary_mode' => 'perimeter',
+        'boundary_scope' => $scope,
+        'boundary_code' => $code,
+    ];
+
+    foreach ($features as $feature) {
+        if (!is_array($feature)) {
+            continue;
+        }
+        if ($properties['boundary_scope'] === $scope && isset($feature['properties']) && is_array($feature['properties'])) {
+            $sourceProperties = $feature['properties'];
+            foreach (['adm1_psgc', 'adm1_en', 'adm2_psgc', 'adm2_en', 'adm3_psgc', 'adm3_en', 'city_name', 'citymun_name'] as $key) {
+                if (isset($sourceProperties[$key])) {
+                    $properties[$key] = $sourceProperties[$key];
+                }
+            }
+        }
+
+        $geometry = is_array($feature['geometry'] ?? null) ? $feature['geometry'] : [];
+        foreach (boundary_geometry_rings($geometry) as $ring) {
+            if (!is_array($ring) || count($ring) < 4) {
+                continue;
+            }
+            for ($i = 0; $i < count($ring) - 1; $i++) {
+                $from = $ring[$i];
+                $to = $ring[$i + 1];
+                if (!is_array($from) || !is_array($to)) {
+                    continue;
+                }
+                $fromKey = boundary_coord_key($from);
+                $toKey = boundary_coord_key($to);
+                if ($fromKey === $toKey) {
+                    continue;
+                }
+                $edgeKey = strcmp($fromKey, $toKey) < 0 ? $fromKey . '|' . $toKey : $toKey . '|' . $fromKey;
+                if (isset($boundaryEdges[$edgeKey])) {
+                    unset($boundaryEdges[$edgeKey]);
+                    continue;
+                }
+                $boundaryEdges[$edgeKey] = [
+                    'from_key' => $fromKey,
+                    'to_key' => $toKey,
+                    'from' => [(float)$from[0], (float)$from[1]],
+                    'to' => [(float)$to[0], (float)$to[1]],
+                ];
+            }
+        }
+    }
+
+    $segments = array_values($boundaryEdges);
+    unset($boundaryEdges);
+
+    $byStart = [];
+    foreach ($segments as $idx => $segment) {
+        $byStart[$segment['from_key']][] = $idx;
+    }
+
+    $used = [];
+    $rings = [];
+    foreach ($segments as $idx => $segment) {
+        if (isset($used[$idx])) {
+            continue;
+        }
+
+        $ring = [$segment['from'], $segment['to']];
+        $used[$idx] = true;
+        $startKey = $segment['from_key'];
+        $currentKey = $segment['to_key'];
+        $guard = 0;
+
+        while ($currentKey !== $startKey && $guard < count($segments) + 5) {
+            $guard++;
+            $nextIdx = null;
+            foreach ($byStart[$currentKey] ?? [] as $candidateIdx) {
+                if (!isset($used[$candidateIdx])) {
+                    $nextIdx = $candidateIdx;
+                    break;
+                }
+            }
+            if ($nextIdx === null) {
+                break;
+            }
+
+            $next = $segments[$nextIdx];
+            $ring[] = $next['to'];
+            $used[$nextIdx] = true;
+            $currentKey = $next['to_key'];
+        }
+
+        if ($currentKey === $startKey && count($ring) >= 4) {
+            if (boundary_coord_key($ring[0]) !== boundary_coord_key($ring[count($ring) - 1])) {
+                $ring[] = $ring[0];
+            }
+            if (abs(boundary_ring_area($ring)) > 0.000000000001) {
+                $rings[] = $ring;
+            }
+        }
+    }
+
+    if ($rings === [] && count($features) === 1) {
+        return [
+            'type' => 'FeatureCollection',
+            'features' => [[
+                'type' => 'Feature',
+                'properties' => ['boundary_mode' => 'perimeter'] + (is_array($features[0]['properties'] ?? null) ? $features[0]['properties'] : $properties),
+                'geometry' => $features[0]['geometry'] ?? null,
+            ]],
+        ];
+    }
+
+    usort($rings, static fn(array $a, array $b): int => abs(boundary_ring_area($b)) <=> abs(boundary_ring_area($a)));
+
+    $polygons = [];
+    foreach ($rings as $ring) {
+        if (boundary_ring_area($ring) < 0) {
+            $ring = array_reverse($ring);
+        }
+        $polygons[] = [$ring];
+    }
+
+    $geometry = count($polygons) === 1
+        ? ['type' => 'Polygon', 'coordinates' => $polygons[0]]
+        : ['type' => 'MultiPolygon', 'coordinates' => $polygons];
+
+    return [
+        'type' => 'FeatureCollection',
+        'features' => [[
+            'type' => 'Feature',
+            'properties' => $properties + [
+                'source_feature_count' => count($features),
+                'perimeter_ring_count' => count($rings),
+            ],
+            'geometry' => $geometry,
+        ]],
+    ];
+}
+
+function write_boundary_perimeter_geojson(string $scope, string $code, string $sourcePath, string $outputPath): array
+{
+    $geojson = json_decode((string)@file_get_contents($sourcePath), true);
+    if (!is_array($geojson)) {
+        return ['ok' => false, 'error' => 'Generated child boundary GeoJSON could not be read.'];
+    }
+
+    $perimeter = boundary_dissolved_feature_collection($geojson, $scope, $code);
+    $encoded = json_encode($perimeter, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    if ($encoded === false || @file_put_contents($outputPath, $encoded . "\n") === false) {
+        return ['ok' => false, 'error' => 'Boundary perimeter cache could not be written.'];
+    }
+
+    return ['ok' => true];
+}
+
+function prepare_boundary_response_geojson(string $scope, string $code, string $mode): array
+{
+    $mode = boundary_response_mode($mode);
+    $paths = boundary_http_paths($scope, $code, $mode);
+    if (is_file($paths['geojson'])) {
+        return ['ok' => true, 'paths' => $paths, 'output' => 'cached'];
+    }
+
+    if ($mode === 'children') {
+        $prepared = prepare_boundary_geojson($scope, $code, $paths);
+        return $prepared + ['paths' => $paths];
+    }
+
+    if (!ensure_dir($paths['dir'])) {
+        return ['ok' => false, 'paths' => $paths, 'error' => 'Boundary cache directory is not writable.'];
+    }
+
+    $childPaths = boundary_http_paths($scope, $code, 'children');
+    $prepared = prepare_boundary_geojson($scope, $code, $childPaths);
+    if (!$prepared['ok']) {
+        return $prepared + ['paths' => $paths];
+    }
+
+    $perimeter = write_boundary_perimeter_geojson($scope, $code, $childPaths['geojson'], $paths['geojson']);
+    return $perimeter + ['paths' => $paths];
 }
 
 function prepare_boundary_geojson(string $scope, string $code, array $paths): array
@@ -528,7 +791,7 @@ function boundary_response_headers(string $scope, string $code, string $geojsonP
     ];
 }
 
-function serve_boundary_geojson(string $scope, string $code, array $commonHeaders): void
+function serve_boundary_geojson(string $scope, string $code, array $commonHeaders, string $mode = 'perimeter'): void
 {
     $scope = normalize_boundary_scope($scope);
     $code = preg_replace('/\D+/', '', $code) ?? '';
@@ -540,8 +803,8 @@ function serve_boundary_geojson(string $scope, string $code, array $commonHeader
         ]));
     }
 
-    $paths = boundary_http_paths($scope, $code);
-    $prepared = prepare_boundary_geojson($scope, $code, $paths);
+    $mode = boundary_response_mode($mode);
+    $prepared = prepare_boundary_response_geojson($scope, $code, $mode);
     if (!$prepared['ok']) {
         $status = (($prepared['error'] ?? '') === 'Boundary generation failed.') ? 404 : 500;
         respond($status, $commonHeaders + ['Content-Type' => 'application/json'], json_encode([
@@ -551,7 +814,9 @@ function serve_boundary_geojson(string $scope, string $code, array $commonHeader
         ]));
     }
 
+    $paths = $prepared['paths'];
     $headers = boundary_response_headers($scope, $code, $paths['geojson']);
+    $headers['X-PBB-Boundary-Mode'] = $mode;
     $ifNoneMatch = trim((string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''));
     if ($ifNoneMatch !== '' && hash_equals($headers['ETag'], $ifNoneMatch)) {
         respond(304, $headers);
@@ -1012,17 +1277,21 @@ if (($path === '/tiles/health' || $path === '/health') && $method === 'GET') {
 }
 
 if (preg_match('~^/boundaries/([^/]+)/([A-Za-z0-9_-]+)\.geojson$~', $path, $m) && $method === 'GET') {
-    serve_boundary_geojson($m[1], $m[2], $commonHeaders);
+    serve_boundary_geojson($m[1], $m[2], $commonHeaders, (string)($_GET['mode'] ?? 'perimeter'));
+}
+
+if (preg_match('~^/boundaries/([^/]+)/([A-Za-z0-9_-]+)/(children|barangays)\.geojson$~', $path, $m) && $method === 'GET') {
+    serve_boundary_geojson($m[1], $m[2], $commonHeaders, 'children');
 }
 
 if (preg_match('~^/api/boundaries/([^/]+)/([A-Za-z0-9_-]+)$~', $path, $m) && $method === 'GET') {
-    serve_boundary_geojson($m[1], $m[2], $commonHeaders);
+    serve_boundary_geojson($m[1], $m[2], $commonHeaders, (string)($_GET['mode'] ?? 'perimeter'));
 }
 
 if ($path === '/boundaries.geojson' && $method === 'GET') {
     $scope = normalize_boundary_scope((string)($_GET['scope'] ?? $_GET['level'] ?? ''));
     $code = $scope !== '' ? boundary_code_from_request($scope, $_GET) : '';
-    serve_boundary_geojson($scope, $code, $commonHeaders);
+    serve_boundary_geojson($scope, $code, $commonHeaders, (string)($_GET['mode'] ?? 'perimeter'));
 }
 
 $isPurge = false;

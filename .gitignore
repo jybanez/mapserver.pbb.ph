@@ -1,9 +1,11 @@
 .env
+pbb-chat-token.local.json
 .artifacts/
 test-results/
 storage/logs/
 storage/tiles/
 storage/installer/
 storage/boundaries/
+.agents/secrets/
 pbb.ph.key
 pbb.ph.crt

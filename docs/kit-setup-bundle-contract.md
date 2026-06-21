@@ -87,11 +87,13 @@ MapServer serves browser-consumable GeoJSON overlays from the same vendored boun
 
 ```http
 GET /boundaries/{scope}/{code}.geojson
+GET /boundaries/{scope}/{code}/children.geojson
+GET /boundaries/{scope}/{code}/barangays.geojson
 GET /api/boundaries/{scope}/{code}
 GET /boundaries.geojson?scope={scope}&code={code}
 ```
 
-Scopes are `barangay`, `city`, `province`, and `region`; `other` maps to `barangay`. Query aliases match Relay public hub identity fields: `relay_hub_id`/`brgy_code`, `citymun_code`, `prov_code`, and `reg_code`. Responses are public GeoJSON `FeatureCollection` documents with `Access-Control-Allow-Origin: *`, `ETag`, `Last-Modified`, `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`, and `X-PBB-Boundary-*` metadata headers. Full contract: `docs/boundary-overlay-contract.md`.
+Scopes are `barangay`, `city`, `province`, and `region`; `other` maps to `barangay`. Query aliases match Relay public hub identity fields: `relay_hub_id`/`brgy_code`, `citymun_code`, `prov_code`, and `reg_code`. Primary responses are public GeoJSON `FeatureCollection` documents containing the requested area's perimeter only. Wider-scope child barangay collections are available through `/children.geojson`, `/barangays.geojson`, or `mode=children`. Boundary responses include `Access-Control-Allow-Origin: *`, `ETag`, `Last-Modified`, `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`, and `X-PBB-Boundary-*` metadata headers. Full contract: `docs/boundary-overlay-contract.md`.
 
 ## Data Prep TLS
 
