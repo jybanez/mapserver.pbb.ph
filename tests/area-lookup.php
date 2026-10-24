@@ -63,6 +63,28 @@ try {
     $c = ['code' => '010101003', 'rings' => [square(10, 0, 11, 1), square(12, 0, 13, 1)]];
     $zipPath = $root . '/PH_Adm4_BgySubMuns.shp.zip';
     fixture_zip($zipPath, [$b, $c, $a]); // Deliberately out of order.
+    $cityCsv = file_get_contents($root . '/PH_Adm3_MuniCities.csv');
+    $cityHeader = "adm1_psgc,adm2_psgc,adm3_psgc,adm3_en\n";
+    $cityRow = "010000000,010100000,010101000,Test City\n";
+    $conflictingCityRow = "010000000,010100000,010101000,Conflicting City\n";
+    foreach ([$cityRow . $conflictingCityRow, $conflictingCityRow . $cityRow] as $order => $rows) {
+        file_put_contents($root . '/PH_Adm3_MuniCities.csv', $cityHeader . $rows);
+        [$cityStatus, $cityError] = lookup_response('lat=.25&lon=.25', $root, 'test');
+        check($cityStatus === 503 && $cityError['error']['code'] === 'dataset_unavailable', 'conflicting city metadata rejected in row order ' . $order);
+    }
+    file_put_contents($root . '/PH_Adm3_MuniCities.csv', $cityHeader . $cityRow . $cityRow);
+    check(lookup_response('lat=.25&lon=.25', $root, 'test')[0] === 200, 'identical city metadata duplicates accepted');
+    file_put_contents($root . '/PH_Adm3_MuniCities.csv', $cityCsv);
+    $unclosed = $a;
+    $unclosed['rings'][0][4] = [0.0, 0.1];
+    fixture_zip($zipPath, [$unclosed]);
+    [$ringStatus, $ringError] = lookup_response('lat=.25&lon=.25', $root, 'test');
+    check($ringStatus === 503 && $ringError['error']['code'] === 'dataset_unavailable', 'unclosed original outer ring rejected');
+    $unclosedHole = $a;
+    $unclosedHole['rings'][1][4] = [.5, .6];
+    fixture_zip($zipPath, [$unclosedHole]);
+    check(lookup_response('lat=50&lon=50', $root, 'test')[0] === 503, 'unclosed original hole rejected even outside candidate bbox');
+    fixture_zip($zipPath, [$b, $c, $a]);
     [$status, $first] = lookup_response('lat=0.25&lon=0.25', $root, 'fixture-build');
     check($status === 200 && $first['outcome'] === 'matched' && $first['matches'][0]['barangay_code'] === '010101001', 'interior and preserved leading-zero code');
     check($first['coverage']['completeness'] === 'unknown' && $first['matches'][0]['hierarchy']['province']['name'] === null, 'unknown completeness and no invented names');

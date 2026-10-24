@@ -79,7 +79,7 @@ Example (hashes abbreviated only for documentation):
     "version": "2026-05-22T02:15:00Z",
     "content_id": "<sha256>",
     "build": "pbb-mapserver-20260621-113628",
-    "algorithm": "1.0.0",
+    "algorithm": "1.0.1",
     "boundary_tolerance_degrees": 1e-9,
     "installed_scopes": [{"scope": "national", "code": null}]
   }
@@ -97,7 +97,7 @@ holes and islands. It never tests the dissolved parent perimeter. A hole interio
 is excluded; a hole edge is `boundary`; all containing shared-edge candidates
 are returned.
 
-Revision `1.0.0` uses point-to-segment Euclidean distance in longitude/latitude
+Revision `1.0.1` uses point-to-segment Euclidean distance in longitude/latitude
 space with fixed numerical tolerance **1e-9 degrees**. The same tolerance expands
 the bbox test. This is solely an edge classification rule, not positional
 accuracy, a physical distance or a routing buffer. Fixtures pin distances of
@@ -119,7 +119,10 @@ index. Declared national/pack checksums are verified.
 
 The worker streams SHP/DBF from ZIP using existing ring-assembly/format helpers;
 it checks headers, lengths/counts, polygon structure, candidate coordinates and
-metadata. It never extracts the national geometry or silently replaces a source.
+metadata. Original outer/hole rings must be exactly closed in both coordinate
+axes before conversion; the lookup does not repair malformed rings. Conflicting
+city CSV rows fail in either order; identical duplicates are accepted.
+It never extracts the national geometry or silently replaces a source.
 
 HTTP 503 example:
 

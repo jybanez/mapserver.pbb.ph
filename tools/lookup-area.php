@@ -5,7 +5,7 @@ declare(strict_types=1);
 define('MAPSERVER_BOUNDARY_LIBRARY_ONLY', true);
 require_once __DIR__ . '/prepare-boundaries.php';
 
-const AREA_LOOKUP_REVISION = '1.0.0';
+const AREA_LOOKUP_REVISION = '1.0.1';
 const AREA_LOOKUP_TOLERANCE = 1.0E-9; // Euclidean coordinate degrees, numerical only.
 
 function lookup_json(string $path): array
@@ -187,6 +187,15 @@ function lookup_records(string $path, callable $callback): void
                     if (($p === 0 && $start !== 0) || $start <= $previous || $end - $start < 4 || $end > $points) {
                         throw new RuntimeException('Invalid polygon rings.');
                     }
+                    // Check original coordinates before the legacy helper can close a ring.
+                    $pointsOffset = 44 + 4 * $parts;
+                    foreach ([0, 8] as $axis) {
+                        $first = read_le_double($content, $pointsOffset + 16 * $start + $axis);
+                        $last = read_le_double($content, $pointsOffset + 16 * ($end - 1) + $axis);
+                        if (!is_finite($first) || !is_finite($last) || $first !== $last) {
+                            throw new RuntimeException('Unclosed polygon ring.');
+                        }
+                    }
                     $previous = $start;
                 }
             }
@@ -209,7 +218,11 @@ function lookup_metadata(string $root): array
         if (!preg_match('/^\d+$/D', $row['adm3_psgc'] ?? '')) {
             throw new RuntimeException('Invalid city metadata.');
         }
-        $cities[$row['adm3_psgc']] = $row;
+        $code = $row['adm3_psgc'];
+        if (isset($cities[$code]) && $cities[$code] !== $row) {
+            throw new RuntimeException('Conflicting canonical city metadata.');
+        }
+        $cities[$code] = $row;
     }
     $barangays = [];
     foreach (read_csv_rows($root . '/PH_Adm4_BgySubMuns.csv') as $row) {

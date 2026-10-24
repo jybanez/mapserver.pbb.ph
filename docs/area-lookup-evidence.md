@@ -9,7 +9,7 @@ Date: 2026-10-24, Asia/Manila. Windows WAMP PHP CLI 8.2.29.
 & C:/wamp64/bin/php/php8.2.29/php.exe -d allow_url_fopen=0 -d disable_functions=curl_exec,curl_multi_exec,fsockopen,pfsockopen,stream_socket_client tests/area-lookup.php
 ```
 
-35 checks passed using temporary synthetic SHP/DBF ZIPs and CSVs. No installed
+40 checks passed using temporary synthetic SHP/DBF ZIPs and CSVs. No installed
 resources were modified. Cases include interior, preserved zero-prefixed codes,
 hierarchy/bbox, shared edges, deterministic ordering, overlaps, lone boundary,
 holes/islands, both sides of outer/hole tolerance, duplicates/conflicts, invalid
@@ -17,6 +17,12 @@ and repeated/array inputs, valid extrema, scoped miss, corrupt/missing data and
 dataset replacement changing both identity and actual matches. A truncated DBF,
 declared checksum mismatch, and corrupt pack alongside a valid national ZIP also
 fail explicitly rather than returning partial results or falling back.
+
+Atlas review regressions: conflicting city metadata returns 503 in either row
+order; identical city duplicates succeed. Unclosed original outer/hole rings
+return 503 before the shared parser can repair them, including a hole in a
+feature outside the query bbox. The legacy overlay parser is unchanged. Lookup
+algorithm revision is now 1.0.1, changing its content identity accordingly.
 
 ## Real-data HTTP checks
 
