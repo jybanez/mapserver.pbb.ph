@@ -102,6 +102,13 @@ When Data Prep populates tiles through an HTTPS PBB domain with a local/self-sig
 
 The wrapper can resolve Hub/Kit barangay codes such as `072217029` and `072217003` from the vendored boundary data, then populate the matching local tile coverage. See `docs/tile-populator.md` for the full Data Prep contract and verified population examples.
 
+## Coordinate Lookup API
+
+`GET /api/areas/lookup?lat=10.317&lon=123.892` returns containing barangay
+candidates from installed local data, without an external geocoder. See
+[`docs/area-lookup-contract.md`](docs/area-lookup-contract.md) for the contract,
+coverage uncertainty, errors and performance limits.
+
 ## Boundary Overlay API
 MapServer also serves public boundary overlays for client apps such as Hotline:
 
