@@ -62,6 +62,9 @@ TXT;
 
 function fail(string $message, int $code = 2): void
 {
+    if (defined('MAPSERVER_BOUNDARY_LIBRARY_ONLY')) {
+        throw new RuntimeException($message);
+    }
     fwrite(STDERR, $message . PHP_EOL);
     exit($code);
 }
@@ -726,6 +729,11 @@ function write_json_file(string $path, array $data): void
 
 if (!extension_loaded('curl') || !extension_loaded('zip')) {
     fail('PHP curl and zip extensions are required.');
+}
+
+// The lookup worker reuses the boundary format readers without running the CLI.
+if (defined('MAPSERVER_BOUNDARY_LIBRARY_ONLY')) {
+    return;
 }
 
 $started = date('c');

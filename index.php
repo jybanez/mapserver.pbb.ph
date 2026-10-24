@@ -1268,6 +1268,19 @@ if ($path === '/api/status' && $method === 'GET') {
     respond(200, $headers, json_encode(get_service_status()));
 }
 
+if ($path === '/api/areas/lookup' && $method === 'GET') {
+    $headers = ['Access-Control-Allow-Origin' => '*', 'Cache-Control' => 'no-store', 'Content-Type' => 'application/json; charset=UTF-8'];
+    $command = [boundary_php_binary(), '-d', 'allow_url_fopen=0', '-d', 'disable_functions=curl_exec,curl_multi_exec,fsockopen,pfsockopen,stream_socket_client', __DIR__ . '/tools/lookup-area.php', base64_encode((string)($_SERVER['QUERY_STRING'] ?? '')), release_build_id()];
+    $output = [];
+    $exitCode = 1;
+    exec(implode(' ', array_map('escapeshellarg', $command)), $output, $exitCode);
+    $result = json_decode(implode("\n", $output), true);
+    if ($exitCode !== 0 || !is_array($result) || !in_array($result['http_status'] ?? 0, [200, 400, 503], true) || !is_array($result['body'] ?? null)) {
+        respond(503, $headers, json_encode(['schema_version' => 1, 'error' => ['code' => 'dataset_unavailable', 'message' => 'Local lookup worker failed. Check PHP configuration and the server log.']]));
+    }
+    respond($result['http_status'], $headers, json_encode($result['body'], JSON_UNESCAPED_SLASHES));
+}
+
 if (($path === '/tiles/health' || $path === '/health') && $method === 'GET') {
     $headers = $commonHeaders + [
         'Content-Type' => 'application/json',
